@@ -56,3 +56,7 @@ func main() {
 | WithMetricsReportingPeriod  | OTEL_EXPORTER_OTLP_METRICS_PERIOD   | n        | 30s                  |
 | WithMetricsEnabled          | OTEL_METRICS_ENABLED                | n        | true                 |
 | WithTracesEnabled           | OTEL_TRACES_ENABLED                 | n        | true                 |
+
+------
+
+This is a joint effort alongside LightStep and is based their initial [otel-launcher-go](https://github.com/lightstep/otel-launcher-go). The intention is to contribute this to OpenTelemtry Go Contrib and using this [open PR](https://github.com/open-telemetry/opentelemetry-go-contrib/pull/2592).
