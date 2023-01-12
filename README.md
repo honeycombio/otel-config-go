@@ -1,10 +1,58 @@
-# Default Community Health Files
+# Honeycomb Go Launcher
 
-This repository contains default community health files for repositories in the Honeycomb organization and will automatically be picked up if they are not overwritten.
+The Go Launcher is a configuration layer that chooses default values for configuration options that many OpenTelemetry users would ultimately configure manually, allowing for minimal code to quickly instrument with OpenTelemetry.
 
-More details on this repository structure can be found here: https://docs.github.com/en/github/building-a-strong-community/creating-a-default-community-health-file
+## Getting started
 
-# {project-name}
+```bash
+go get github.com/honeycombio/otel-launcher-go
+```
 
-<!-- OSS metadata badge - rename repo link and set status in OSSMETADATA -->
-<!-- [![OSS Lifecycle](https://img.shields.io/osslifecycle/honeycombio/{repo-name})](https://github.com/honeycombio/home/blob/main/honeycomb-oss-lifecycle-and-practices.md) -->
+## Configure
+
+Minimal setup - by default will send all telemetry via GRPC to `localhost:4317`
+
+```go
+import "github.com/honeycombio/otel-launcher-go/launcher"
+
+func main() {
+    lnchr, err := launcher.ConfigureOpentelemetry()
+    defer lnchr.Shutdown()
+}
+```
+
+You can set headers directly instead.
+
+```go
+import "github.com/honeycombio/otel-launcher-go/launcher"
+
+func main() {
+    lnchr, err := launcher.ConfigureOpentelemetry(
+        launcher.WithServiceName("service-name"),
+        launcher.WithHeaders(map[string]string{
+            "service-auth-key": "value",
+            "service-useful-field": "testing",
+        }),
+    )
+    defer lnchr.Shutdown()
+}
+```
+
+## Configuration Options
+
+| Config Option               | Env Variable                        | Required | Default              |
+| --------------------------- | ----------------------------------- | -------- | -------------------- |
+| WithServiceName             | OTEL_SERVICE_NAME                   | y        | -                    |
+| WithServiceVersion          | OTEL_SERVICE_VERSION                | n        | -                    |
+| WithHeaders                 | OTEL_EXPORTER_OTLP_HEADERS          | n        | {}                   |
+| WithProtocol                | OTEL_EXPORTER_OTLP_PROTOCOL         | n        | grpc                 |
+| WithTracesExporterEndpoint  | OTEL_EXPORTER_OTLP_TRACES_ENDPOINT  | n        | localhost:4317       |
+| WithTracesExporterInsecure  | OTEL_EXPORTER_OTLP_TRACES_INSECURE  | n        | false                |
+| WithMetricsExporterEndpoint | OTEL_EXPORTER_OTLP_METRICS_ENDPOINT | n        | localhost:4317       |
+| WithMetricsExporterInsecure | OTEL_EXPORTER_OTLP_METRICS_INSECURE | n        | false                |
+| WithLogLevel                | OTEL_LOG_LEVEL                      | n        | info                 |
+| WithPropagators             | OTEL_PROPAGATORS                    | n        | tracecontext,baggage |
+| WithResourceAttributes      | OTEL_RESOURCE_ATTRIBUTES            | n        | -                    |
+| WithMetricsReportingPeriod  | OTEL_EXPORTER_OTLP_METRICS_PERIOD   | n        | 30s                  |
+| WithMetricsEnabled          | OTEL_METRICS_ENABLED                | n        | true                 |
+| WithTracesEnabled           | OTEL_TRACES_ENABLED                 | n        | true                 |
