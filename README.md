@@ -59,4 +59,4 @@ func main() {
 
 ------
 
-This is a joint effort alongside LightStep and is based their initial [otel-launcher-go](https://github.com/lightstep/otel-launcher-go). The intention is to contribute this to OpenTelemtry Go Contrib and using this [open PR](https://github.com/open-telemetry/opentelemetry-go-contrib/pull/2592).
+This is a joint effort alongside LightStep and is based their initial [otel-launcher-go](https://github.com/lightstep/otel-launcher-go). The intention is to contribute this to OpenTelemetry Go Contrib.
