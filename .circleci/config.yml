@@ -1,0 +1,67 @@
+version: 2.1
+
+matrix_goversions: &matrix_goversions
+  matrix:
+    parameters:
+      goversion: ["18", "19"]
+
+default_goversion: &default_goversion "18"
+
+jobs:
+  test:
+    parameters:
+      goversion:
+        type: string
+        default: *default_goversion
+    docker:
+      - image: cimg/go:1.<< parameters.goversion >>
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-go-mod-{{ checksum "go.sum" }}
+      - run: make test
+      - save_cache:
+          key: v1-go-mod-{{ checksum "go.sum" }}
+          paths:
+            - /home/circleci/go/pkg/mod
+
+  publish_github:
+    docker:
+      - image: cibuilds/github:0.13.0
+    steps:
+      - run:
+          name: "Publish Release on GitHub"
+          command: |
+            echo "Creating GitHub release for tag ${CIRCLE_TAG}"
+            ghr -draft -n ${CIRCLE_TAG} -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} ${CIRCLE_TAG}
+
+workflows:
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - main
+    jobs:
+      - test:
+          <<: *matrix_goversions
+
+  build:
+    jobs:
+      - test:
+          <<: *matrix_goversions
+          filters:
+            tags:
+              only: /.*/
+      - publish_github:
+          context: Honeycomb Secrets for Public Repos
+          requires:
+            - test
+          filters:
+            tags:
+              only: /^v[0-9].*/
+            branches:
+              ignore: /.*/
