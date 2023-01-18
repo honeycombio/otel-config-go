@@ -2,6 +2,7 @@ package launcher
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -301,6 +302,24 @@ func TestDefaultConfig(t *testing.T) {
 		Sampler:                         trace.AlwaysSample(),
 	}
 	assert.Equal(t, expected, config)
+}
+
+func TestDefaultConfigMarshal(t *testing.T) {
+	logger := &testLogger{}
+	handler := &testErrorHandler{}
+	config := newConfig(
+		WithLogger(logger),
+		WithErrorHandler(handler),
+		WithShutdown(func(c *Config) error {
+			return nil
+		}),
+	)
+
+	j, err := json.Marshal(config)
+
+	assert.NoError(t, err)
+
+	assert.NotEmpty(t, j)
 }
 
 func TestEnvironmentVariables(t *testing.T) {
