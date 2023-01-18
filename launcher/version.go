@@ -1,3 +1,3 @@
 package launcher
 
-const version = "1.5.2"
+const version = "0.1.0"
