@@ -1,0 +1,37 @@
+version: '3.0'
+
+x-env-base: &env_base
+  OTEL_EXPORTER_OTLP_ENDPOINT: collector:4317
+  OTEL_EXPORTER_OTLP_INSECURE: true
+  OTEL_SERVICE_NAME: "my-go-app"
+  OTEL_METRICS_ENABLED: false
+  DEBUG: "true"
+
+x-app-base: &app_base
+  build:
+    context: ../
+    dockerfile: ./examples/Dockerfile
+  image: honeycomb/examples
+  depends_on:
+    - collector
+
+services:
+  collector:
+    image: otel/opentelemetry-collector:0.52.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - "./collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml"
+      - "./collector:/var/lib"
+
+  app-sdk-http:
+    <<: *app_base
+    environment:
+      <<: *env_base
+      OTEL_EXPORTER_OTLP_ENDPOINT: collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+
+  app-sdk-grpc:
+    <<: *app_base
+    environment:
+      <<: *env_base
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
