@@ -2,7 +2,7 @@ version: '3.0'
 
 x-env-base: &env_base
   OTEL_EXPORTER_OTLP_ENDPOINT: collector:4317
-  OTEL_EXPORTER_OTLP_INSECURE: true
+  OTEL_EXPORTER_OTLP_INSECURE: "true"
   OTEL_SERVICE_NAME: "my-go-app"
   OTEL_METRICS_ENABLED: false
   DEBUG: "true"
