@@ -7,6 +7,9 @@ matrix_goversions: &matrix_goversions
 
 default_goversion: &default_goversion "18"
 
+orbs:
+  bats: circleci/bats@1.0.0
+
 jobs:
   test:
     parameters:
@@ -25,6 +28,32 @@ jobs:
           key: v1-go-mod-{{ checksum "go.sum" }}
           paths:
             - /home/circleci/go/pkg/mod
+
+  smoke_test:
+    machine:
+      image: ubuntu-2004:202107-02
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./
+      - bats/install
+      - run:
+          name: What's the BATS?
+          command: |
+            which bats
+            bats --version
+      - run:
+          name: Smoke Test
+          command: make smoke-sdk
+      - store_test_results:
+          path: ./smoke-tests/
+      - store_artifacts:
+          path: ./smoke-tests/report.xml
+      - store_artifacts:
+          path: ./smoke-tests/collector/data-results
+      - run:
+          name: Extinguish the flames
+          command: make unsmoke
 
   publish_github:
     docker:
@@ -48,11 +77,20 @@ workflows:
     jobs:
       - test:
           <<: *matrix_goversions
+      - smoke_test:
+          requires:
+            - test
 
   build:
     jobs:
       - test:
           <<: *matrix_goversions
+          filters:
+            tags:
+              only: /.*/
+      - smoke_test:
+          requires:
+            - test
           filters:
             tags:
               only: /.*/
