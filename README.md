@@ -16,7 +16,7 @@ Minimal setup - by default will send all telemetry via GRPC to `localhost:4317`
 import "github.com/honeycombio/otel-launcher-go/launcher"
 
 func main() {
-    lnchr, err := launcher.ConfigureOpentelemetry()
+    lnchr, err := launcher.ConfigureOpenTelemetry()
     defer lnchr.Shutdown()
 }
 ```
@@ -27,7 +27,7 @@ You can set headers directly instead.
 import "github.com/honeycombio/otel-launcher-go/launcher"
 
 func main() {
-    lnchr, err := launcher.ConfigureOpentelemetry(
+    lnchr, err := launcher.ConfigureOpenTelemetry(
         launcher.WithServiceName("service-name"),
         launcher.WithHeaders(map[string]string{
             "service-auth-key": "value",
