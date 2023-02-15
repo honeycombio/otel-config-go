@@ -369,14 +369,14 @@ func TestEnvironmentVariables(t *testing.T) {
 	unsetEnvironment()
 }
 
-func TestConfigurationOverrides(t *testing.T) {
+func TestConfigurationOverridesGrpc(t *testing.T) {
 	setEnvironment()
 	logger := &testLogger{}
 	handler := &testErrorHandler{}
 	config := newConfig(
 		WithServiceName("override-service-name"),
 		WithServiceVersion("override-service-version"),
-		WithExporterEndpoint("override-generic-url"),
+		WithExporterEndpoint("https://override-generic-url"),
 		WithExporterInsecure(false),
 		WithTracesExporterEndpoint("override-traces-url"),
 		WithTracesExporterInsecure(false),
@@ -386,9 +386,9 @@ func TestConfigurationOverrides(t *testing.T) {
 		WithLogger(logger),
 		WithErrorHandler(handler),
 		WithPropagators([]string{"b3"}),
-		WithExporterProtocol("defaultProtocol"),
-		WithMetricsExporterProtocol("metricsProtocol"),
-		WithTracesExporterProtocol("tracesProtocol"),
+		WithExporterProtocol("grpc"),
+		WithMetricsExporterProtocol("grpc"),
+		WithTracesExporterProtocol("grpc"),
 	)
 
 	attributes := []attribute.KeyValue{
@@ -420,9 +420,70 @@ func TestConfigurationOverrides(t *testing.T) {
 		Propagators:                     []string{"b3"},
 		Resource:                        resource.NewWithAttributes(semconv.SchemaURL, attributes...),
 		Logger:                          logger,
-		ExporterProtocol:                "defaultProtocol",
-		TracesExporterProtocol:          "tracesProtocol",
-		MetricsExporterProtocol:         "metricsProtocol",
+		ExporterProtocol:                "grpc",
+		TracesExporterProtocol:          "grpc",
+		MetricsExporterProtocol:         "grpc",
+		errorHandler:                    handler,
+		Sampler:                         trace.AlwaysSample(),
+	}
+	assert.Equal(t, expected, config)
+	unsetEnvironment()
+}
+
+func TestConfigurationOverridesHttp(t *testing.T) {
+	setEnvironment()
+	logger := &testLogger{}
+	handler := &testErrorHandler{}
+	config := newConfig(
+		WithServiceName("override-service-name"),
+		WithServiceVersion("override-service-version"),
+		WithExporterEndpoint("https://override-generic-url"),
+		WithExporterInsecure(false),
+		WithTracesExporterEndpoint("override-traces-url"),
+		WithTracesExporterInsecure(false),
+		WithMetricsExporterEndpoint("override-metrics-url"),
+		WithMetricsExporterInsecure(false),
+		WithLogLevel("info"),
+		WithLogger(logger),
+		WithErrorHandler(handler),
+		WithPropagators([]string{"b3"}),
+		WithExporterProtocol("http/protobuf"),
+		WithMetricsExporterProtocol("http/protobuf"),
+		WithTracesExporterProtocol("http/protobuf"),
+	)
+
+	attributes := []attribute.KeyValue{
+		attribute.String("host.name", host()),
+		attribute.String("service.name", "override-service-name"),
+		attribute.String("service.version", "override-service-version"),
+		attribute.String("telemetry.sdk.name", "launcher"),
+		attribute.String("telemetry.sdk.language", "go"),
+		attribute.String("telemetry.sdk.version", version),
+	}
+
+	expected := &Config{
+		ServiceName:                     "override-service-name",
+		ServiceVersion:                  "override-service-version",
+		ExporterEndpoint:                "override-generic-url",
+		ExporterEndpointInsecure:        false,
+		TracesExporterEndpoint:          "override-traces-url",
+		TracesExporterEndpointInsecure:  false,
+		TracesEnabled:                   true,
+		MetricsExporterEndpoint:         "override-metrics-url",
+		MetricsExporterEndpointInsecure: false,
+		MetricsReportingPeriod:          "30s",
+		LogLevel:                        "info",
+		Headers:                         map[string]string{},
+		TracesHeaders:                   map[string]string{},
+		MetricsHeaders:                  map[string]string{},
+		ResourceAttributes:              map[string]string{},
+		ResourceAttributesFromEnv:       "service.name=test-service-name-b",
+		Propagators:                     []string{"b3"},
+		Resource:                        resource.NewWithAttributes(semconv.SchemaURL, attributes...),
+		Logger:                          logger,
+		ExporterProtocol:                "http/protobuf",
+		TracesExporterProtocol:          "http/protobuf",
+		MetricsExporterProtocol:         "http/protobuf",
 		errorHandler:                    handler,
 		Sampler:                         trace.AlwaysSample(),
 	}
