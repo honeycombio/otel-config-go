@@ -509,6 +509,8 @@ func setupTracing(c *Config) (func() error, error) {
 		c.Logger.Debugf("tracing is disabled by configuration: no endpoint set")
 		return nil, nil
 	}
+	endpoint = strings.TrimPrefix(endpoint, "https://")
+	endpoint = strings.TrimPrefix(endpoint, "http://")
 
 	return pipelines.NewTracePipeline(pipelines.PipelineConfig{
 		Protocol:       pipelines.Protocol(c.TracesExporterProtocol),
@@ -527,6 +529,9 @@ func setupMetrics(c *Config) (func() error, error) {
 		c.Logger.Debugf("metrics are disabled by configuration: no endpoint set")
 		return nil, nil
 	}
+
+	endpoint = strings.TrimPrefix(endpoint, "https://")
+	endpoint = strings.TrimPrefix(endpoint, "http://")
 
 	return pipelines.NewMetricsPipeline(pipelines.PipelineConfig{
 		Protocol:        pipelines.Protocol(c.MetricsExporterProtocol),
