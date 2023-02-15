@@ -341,14 +341,14 @@ func TestEnvironmentVariables(t *testing.T) {
 	}
 
 	expected := &Config{
-		ExporterEndpoint:                "generic-url",
+		ExporterEndpoint:                "http://generic-url",
 		ExporterEndpointInsecure:        true,
-		TracesExporterEndpoint:          "traces-url",
+		TracesExporterEndpoint:          "http://traces-url",
 		TracesExporterEndpointInsecure:  true,
 		TracesEnabled:                   true,
 		ServiceName:                     "test-service-name",
 		ServiceVersion:                  "test-service-version",
-		MetricsExporterEndpoint:         "metrics-url",
+		MetricsExporterEndpoint:         "http://metrics-url",
 		MetricsExporterEndpointInsecure: true,
 		MetricsEnabled:                  false,
 		MetricsReportingPeriod:          "30s",
@@ -361,68 +361,7 @@ func TestEnvironmentVariables(t *testing.T) {
 		Propagators:                     []string{"b3", "w3c"},
 		Resource:                        resource.NewWithAttributes(semconv.SchemaURL, attributes...),
 		Logger:                          logger,
-		ExporterProtocol:                "foobar",
-		errorHandler:                    handler,
-		Sampler:                         trace.AlwaysSample(),
-	}
-	assert.Equal(t, expected, config)
-	unsetEnvironment()
-}
-
-func TestConfigurationOverridesGrpc(t *testing.T) {
-	setEnvironment()
-	logger := &testLogger{}
-	handler := &testErrorHandler{}
-	config := newConfig(
-		WithServiceName("override-service-name"),
-		WithServiceVersion("override-service-version"),
-		WithExporterEndpoint("https://override-generic-url"),
-		WithExporterInsecure(false),
-		WithTracesExporterEndpoint("override-traces-url"),
-		WithTracesExporterInsecure(false),
-		WithMetricsExporterEndpoint("override-metrics-url"),
-		WithMetricsExporterInsecure(false),
-		WithLogLevel("info"),
-		WithLogger(logger),
-		WithErrorHandler(handler),
-		WithPropagators([]string{"b3"}),
-		WithExporterProtocol("grpc"),
-		WithMetricsExporterProtocol("grpc"),
-		WithTracesExporterProtocol("grpc"),
-	)
-
-	attributes := []attribute.KeyValue{
-		attribute.String("host.name", host()),
-		attribute.String("service.name", "override-service-name"),
-		attribute.String("service.version", "override-service-version"),
-		attribute.String("telemetry.sdk.name", "launcher"),
-		attribute.String("telemetry.sdk.language", "go"),
-		attribute.String("telemetry.sdk.version", version),
-	}
-
-	expected := &Config{
-		ServiceName:                     "override-service-name",
-		ServiceVersion:                  "override-service-version",
-		ExporterEndpoint:                "override-generic-url",
-		ExporterEndpointInsecure:        false,
-		TracesExporterEndpoint:          "override-traces-url",
-		TracesExporterEndpointInsecure:  false,
-		TracesEnabled:                   true,
-		MetricsExporterEndpoint:         "override-metrics-url",
-		MetricsExporterEndpointInsecure: false,
-		MetricsReportingPeriod:          "30s",
-		LogLevel:                        "info",
-		Headers:                         map[string]string{},
-		TracesHeaders:                   map[string]string{},
-		MetricsHeaders:                  map[string]string{},
-		ResourceAttributes:              map[string]string{},
-		ResourceAttributesFromEnv:       "service.name=test-service-name-b",
-		Propagators:                     []string{"b3"},
-		Resource:                        resource.NewWithAttributes(semconv.SchemaURL, attributes...),
-		Logger:                          logger,
 		ExporterProtocol:                "grpc",
-		TracesExporterProtocol:          "grpc",
-		MetricsExporterProtocol:         "grpc",
 		errorHandler:                    handler,
 		Sampler:                         trace.AlwaysSample(),
 	}
@@ -430,7 +369,7 @@ func TestConfigurationOverridesGrpc(t *testing.T) {
 	unsetEnvironment()
 }
 
-func TestConfigurationOverridesHttp(t *testing.T) {
+func TestConfigurationOverrides(t *testing.T) {
 	setEnvironment()
 	logger := &testLogger{}
 	handler := &testErrorHandler{}
@@ -464,7 +403,7 @@ func TestConfigurationOverridesHttp(t *testing.T) {
 	expected := &Config{
 		ServiceName:                     "override-service-name",
 		ServiceVersion:                  "override-service-version",
-		ExporterEndpoint:                "override-generic-url",
+		ExporterEndpoint:                "https://override-generic-url",
 		ExporterEndpointInsecure:        false,
 		TracesExporterEndpoint:          "override-traces-url",
 		TracesExporterEndpointInsecure:  false,
@@ -778,6 +717,15 @@ func TestThatEndpointsFallBackCorrectly(t *testing.T) {
 			metricsInsecure: false,
 		},
 		{
+			name: "set grpc endpoint with https scheme",
+			config: newConfig(
+				WithExporterEndpoint("https://generic-url"),
+				WithExporterProtocol("grpc"),
+			),
+			tracesEndpoint:  "generic-url:443",
+			metricsEndpoint: "generic-url:443",
+		},
+		{
 			name:            "defaults",
 			config:          newConfig(),
 			tracesEndpoint:  "localhost:4317",
@@ -877,19 +825,19 @@ func setenv(key string, value string) {
 }
 
 func setEnvironment() {
-	setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "generic-url")
+	setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://generic-url")
 	setenv("OTEL_EXPORTER_OTLP_INSECURE", "true")
-	setenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "traces-url")
+	setenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "http://traces-url")
 	setenv("OTEL_EXPORTER_OTLP_TRACES_INSECURE", "true")
 	setenv("OTEL_SERVICE_NAME", "test-service-name")
 	setenv("OTEL_SERVICE_VERSION", "test-service-version")
-	setenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "metrics-url")
+	setenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "http://metrics-url")
 	setenv("OTEL_EXPORTER_OTLP_METRICS_INSECURE", "true")
 	setenv("OTEL_METRICS_ENABLED", "false")
 	setenv("OTEL_LOG_LEVEL", "debug")
 	setenv("OTEL_PROPAGATORS", "b3,w3c")
 	setenv("OTEL_RESOURCE_ATTRIBUTES", "service.name=test-service-name-b")
-	setenv("OTEL_EXPORTER_OTLP_PROTOCOL", "foobar")
+	setenv("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc")
 }
 
 func unsetEnvironment() {
