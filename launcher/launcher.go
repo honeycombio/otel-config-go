@@ -43,8 +43,7 @@ type Option func(*Config)
 // WithExporterEndpoint configures the generic endpoint used for sending all telemtry signals via OTLP.
 func WithExporterEndpoint(url string) Option {
 	return func(c *Config) {
-		c.ExporterEndpoint = strings.TrimPrefix(url,"http://")
-		c.ExporterEndpoint = strings.TrimPrefix(url,"https://")
+		c.ExporterEndpoint = url
 	}
 }
 
@@ -446,7 +445,19 @@ func (c *Config) getTracesEndpoint() (string, bool) {
 		c.TracesExporterProtocol = c.ExporterProtocol
 	}
 
-	// use traces specific port, failling back to generic version if not set
+	// helper function - if using grpc and prepending with http, drop the http scheme
+	if c.TracesExporterProtocol == ProtocolGRPC {
+		if strings.HasPrefix(c.TracesExporterEndpoint, "https://") {
+			c.TracesExporterEndpoint = strings.TrimPrefix(c.TracesExporterEndpoint, "https://")
+			newEndpoint := strings.Join([]string{c.TracesExporterEndpoint, ":443"}, "")
+			c.TracesExporterEndpoint = newEndpoint
+		}
+		if strings.HasPrefix(c.TracesExporterEndpoint, "http://") {
+			c.TracesExporterEndpoint = strings.TrimPrefix(c.TracesExporterEndpoint, "http://")
+		}
+	}
+
+	// use traces specific port, falling back to generic version if not set
 	port := GRPCDefaultPort
 	if c.TracesExporterProtocol != ProtocolGRPC {
 		port = HTTPDefaultPort
@@ -469,6 +480,17 @@ func (c *Config) getMetricsEndpoint() (string, bool) {
 	// which has a default value.
 	if c.MetricsExporterProtocol == "" {
 		c.MetricsExporterProtocol = c.ExporterProtocol
+	}
+
+	if c.MetricsExporterProtocol == ProtocolGRPC {
+		if strings.HasPrefix(c.MetricsExporterEndpoint, "https://") {
+			c.MetricsExporterEndpoint = strings.TrimPrefix(c.MetricsExporterEndpoint, "https://")
+			newEndpoint := strings.Join([]string{c.MetricsExporterEndpoint, ":443"}, "")
+			c.MetricsExporterEndpoint = newEndpoint
+		}
+		if strings.HasPrefix(c.MetricsExporterEndpoint, "http://") {
+			c.MetricsExporterEndpoint = strings.TrimPrefix(c.MetricsExporterEndpoint, "http://")
+		}
 	}
 
 	// use metrics specific port, failling back to generic version if not set
