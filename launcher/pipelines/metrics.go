@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc/credentials"
@@ -58,6 +59,8 @@ func NewMetricsPipeline(c PipelineConfig) (func() error, error) {
 
 //revive:disable:flag-parameter bools are fine for an internal function
 func newMetricsExporter(protocol Protocol, endpoint string, insecure bool, headers map[string]string) (metric.Exporter, error) {
+	endpoint = strings.TrimPrefix(endpoint, "https://")
+	endpoint = strings.TrimPrefix(endpoint, "http://")
 	switch protocol {
 	case "grpc":
 		return newGRPCMetricsExporter(endpoint, insecure, headers)

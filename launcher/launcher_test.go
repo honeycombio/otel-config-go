@@ -748,7 +748,7 @@ func TestHttpProtoDefaultsToCorrectHostAndPort(t *testing.T) {
 
 	shutdown, _ := ConfigureOpenTelemetry(
 		WithLogger(logger),
-		WithExporterEndpoint(strings.TrimPrefix(ts.URL, "http://")),
+		WithExporterEndpoint(ts.URL),
 		WithExporterInsecure(true),
 		WithExporterProtocol("http/protobuf"),
 	)

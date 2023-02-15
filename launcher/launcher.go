@@ -43,7 +43,8 @@ type Option func(*Config)
 // WithExporterEndpoint configures the generic endpoint used for sending all telemtry signals via OTLP.
 func WithExporterEndpoint(url string) Option {
 	return func(c *Config) {
-		c.ExporterEndpoint = url
+		c.ExporterEndpoint = strings.TrimPrefix(url,"http://")
+		c.ExporterEndpoint = strings.TrimPrefix(url,"https://")
 	}
 }
 

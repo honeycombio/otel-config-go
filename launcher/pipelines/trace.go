@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"strings"
 
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
@@ -54,6 +55,8 @@ func NewTracePipeline(c PipelineConfig) (func() error, error) {
 
 //revive:disable:flag-parameter bools are fine for an internal function
 func newTraceExporter(protocol Protocol, endpoint string, insecure bool, headers map[string]string) (*otlptrace.Exporter, error) {
+	endpoint = strings.TrimPrefix(endpoint, "https://")
+	endpoint = strings.TrimPrefix(endpoint, "http://")
 	switch protocol {
 	case "grpc":
 		return newGRPCTraceExporter(endpoint, insecure, headers)
