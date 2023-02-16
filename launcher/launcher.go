@@ -556,7 +556,7 @@ func setupTracing(c *Config) (func() error, error) {
 
 	return pipelines.NewTracePipeline(pipelines.PipelineConfig{
 		Protocol:       pipelines.Protocol(c.TracesExporterProtocol),
-		Endpoint:       endpoint,
+		Endpoint:       trimHttpScheme(endpoint, c.TracesExporterProtocol),
 		Insecure:       insecure,
 		Headers:        c.getTracesHeaders(),
 		Resource:       c.Resource,
@@ -574,7 +574,7 @@ func setupMetrics(c *Config) (func() error, error) {
 
 	return pipelines.NewMetricsPipeline(pipelines.PipelineConfig{
 		Protocol:        pipelines.Protocol(c.MetricsExporterProtocol),
-		Endpoint:        endpoint,
+		Endpoint:        trimHttpScheme(endpoint, c.MetricsExporterProtocol),
 		Insecure:        insecure,
 		Headers:         c.getMetricsHeaders(),
 		Resource:        c.Resource,
