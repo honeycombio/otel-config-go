@@ -717,7 +717,7 @@ func TestThatEndpointsFallBackCorrectly(t *testing.T) {
 			metricsInsecure: false,
 		},
 		{
-			name: "set grpc endpoint with https scheme, add port as helper",
+			name: "set grpc endpoint with https scheme and no port, add port as helper",
 			config: newConfig(
 				WithExporterEndpoint("https://generic-url"),
 				WithExporterProtocol("grpc"),
@@ -728,11 +728,20 @@ func TestThatEndpointsFallBackCorrectly(t *testing.T) {
 		{
 			name: "set grpc endpoint with https scheme and port, no update to port",
 			config: newConfig(
-				WithExporterEndpoint("https://generic-url:4317"),
+				WithExporterEndpoint("https://generic-url:1234"),
 				WithExporterProtocol("grpc"),
 			),
-			tracesEndpoint:  "generic-url:4317",
-			metricsEndpoint: "generic-url:4317",
+			tracesEndpoint:  "generic-url:1234",
+			metricsEndpoint: "generic-url:1234",
+		},
+		{
+			name: "set grpc endpoint with http scheme and port, no update to port",
+			config: newConfig(
+				WithExporterEndpoint("http://generic-url:1234"),
+				WithExporterProtocol("grpc"),
+			),
+			tracesEndpoint:  "generic-url:1234",
+			metricsEndpoint: "generic-url:1234",
 		},
 		{
 			name:            "defaults",

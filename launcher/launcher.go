@@ -433,16 +433,22 @@ func ensurePort(host string, defaultPort string) string {
 	}
 }
 
-// sets secure grpc port 443 as helper if provided with invalid https:// endpoint and no port
+// sets default secure port 443 if no port provided
+// used when protocol is grpc and provided endpoint is prepended with https://
 func secureGrpcPort(endpoint string) string {
 	u, err := url.Parse(endpoint)
 	if err != nil {
 		return endpoint
 	}
 	var host, port string
+	// if port is provided, keep it as is
 	if u.Port() != "" {
-		host, port, _ = net.SplitHostPort(u.Host)
+		host, port, err = net.SplitHostPort(u.Host)
+		if err != nil {
+			return endpoint
+		}
 	} else {
+		// set port 443 if not provided
 		host = u.Host
 		port = SSLDefaultPort
 	}
