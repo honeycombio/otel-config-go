@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -34,6 +36,8 @@ const (
 	GRPCDefaultPort = "4317"
 	// HTTP default port.
 	HTTPDefaultPort = "4318"
+	// SSL/TLS default port.
+	SSLDefaultPort = "443"
 )
 
 // Option is the type of an Option to the ConfigureOpenTelemetry function; it's a
@@ -429,6 +433,44 @@ func ensurePort(host string, defaultPort string) string {
 	}
 }
 
+// sets default secure port 443 if no port provided
+// used when protocol is grpc and provided endpoint is prepended with https://
+func secureGrpcPort(endpoint string) string {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return endpoint
+	}
+	var host, port string
+	// if port is provided, keep it as is
+	if u.Port() != "" {
+		host, port, err = net.SplitHostPort(u.Host)
+		if err != nil {
+			return endpoint
+		}
+	} else {
+		// set port 443 if not provided
+		host = u.Host
+		port = SSLDefaultPort
+	}
+	endpoint = fmt.Sprintf("%s:%s", host, port)
+	return endpoint
+}
+
+// trim http scheme from endpoint for proper parsing
+func trimHttpScheme(url string, protocol Protocol) string {
+	switch {
+	case strings.HasPrefix(url, "https://"):
+		if protocol == ProtocolGRPC {
+			url = secureGrpcPort(url)
+		}
+		return strings.TrimPrefix(url, "https://")
+	case strings.HasPrefix(url, "http://"):
+		return strings.TrimPrefix(url, "http://")
+	default:
+		return url
+	}
+}
+
 func (c *Config) getTracesEndpoint() (string, bool) {
 	// use traces specific endpoint, falling back to generic version if not set
 	if c.TracesExporterEndpoint == "" {
@@ -445,7 +487,12 @@ func (c *Config) getTracesEndpoint() (string, bool) {
 		c.TracesExporterProtocol = c.ExporterProtocol
 	}
 
-	// use traces specific port, failling back to generic version if not set
+	// helper function - if using grpc and prepending with http, drop the http scheme
+	if c.TracesExporterProtocol == ProtocolGRPC {
+		c.TracesExporterEndpoint = trimHttpScheme(c.TracesExporterEndpoint, ProtocolGRPC)
+	}
+
+	// use traces specific port, falling back to generic version if not set
 	port := GRPCDefaultPort
 	if c.TracesExporterProtocol != ProtocolGRPC {
 		port = HTTPDefaultPort
@@ -468,6 +515,10 @@ func (c *Config) getMetricsEndpoint() (string, bool) {
 	// which has a default value.
 	if c.MetricsExporterProtocol == "" {
 		c.MetricsExporterProtocol = c.ExporterProtocol
+	}
+
+	if c.MetricsExporterProtocol == ProtocolGRPC {
+		c.MetricsExporterEndpoint = trimHttpScheme(c.MetricsExporterEndpoint, ProtocolGRPC)
 	}
 
 	// use metrics specific port, failling back to generic version if not set
@@ -511,7 +562,7 @@ func setupTracing(c *Config) (func() error, error) {
 
 	return pipelines.NewTracePipeline(pipelines.PipelineConfig{
 		Protocol:       pipelines.Protocol(c.TracesExporterProtocol),
-		Endpoint:       endpoint,
+		Endpoint:       trimHttpScheme(endpoint, c.TracesExporterProtocol),
 		Insecure:       insecure,
 		Headers:        c.getTracesHeaders(),
 		Resource:       c.Resource,
@@ -529,7 +580,7 @@ func setupMetrics(c *Config) (func() error, error) {
 
 	return pipelines.NewMetricsPipeline(pipelines.PipelineConfig{
 		Protocol:        pipelines.Protocol(c.MetricsExporterProtocol),
-		Endpoint:        endpoint,
+		Endpoint:        trimHttpScheme(endpoint, c.MetricsExporterProtocol),
 		Insecure:        insecure,
 		Headers:         c.getMetricsHeaders(),
 		Resource:        c.Resource,

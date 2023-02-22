@@ -1,7 +1,7 @@
 version: '3.0'
 
 x-env-base: &env_base
-  OTEL_EXPORTER_OTLP_ENDPOINT: collector:4317
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://collector:4317
   OTEL_EXPORTER_OTLP_INSECURE: "true"
   OTEL_SERVICE_NAME: "my-go-app"
   OTEL_METRICS_ENABLED: "false"
@@ -27,7 +27,7 @@ services:
     <<: *app_base
     environment:
       <<: *env_base
-      OTEL_EXPORTER_OTLP_ENDPOINT: collector:4318
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
 
   app-sdk-grpc:

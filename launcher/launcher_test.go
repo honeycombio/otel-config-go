@@ -341,14 +341,14 @@ func TestEnvironmentVariables(t *testing.T) {
 	}
 
 	expected := &Config{
-		ExporterEndpoint:                "generic-url",
+		ExporterEndpoint:                "http://generic-url",
 		ExporterEndpointInsecure:        true,
-		TracesExporterEndpoint:          "traces-url",
+		TracesExporterEndpoint:          "http://traces-url",
 		TracesExporterEndpointInsecure:  true,
 		TracesEnabled:                   true,
 		ServiceName:                     "test-service-name",
 		ServiceVersion:                  "test-service-version",
-		MetricsExporterEndpoint:         "metrics-url",
+		MetricsExporterEndpoint:         "http://metrics-url",
 		MetricsExporterEndpointInsecure: true,
 		MetricsEnabled:                  false,
 		MetricsReportingPeriod:          "30s",
@@ -361,7 +361,7 @@ func TestEnvironmentVariables(t *testing.T) {
 		Propagators:                     []string{"b3", "w3c"},
 		Resource:                        resource.NewWithAttributes(semconv.SchemaURL, attributes...),
 		Logger:                          logger,
-		ExporterProtocol:                "foobar",
+		ExporterProtocol:                "grpc",
 		errorHandler:                    handler,
 		Sampler:                         trace.AlwaysSample(),
 	}
@@ -376,7 +376,7 @@ func TestConfigurationOverrides(t *testing.T) {
 	config := newConfig(
 		WithServiceName("override-service-name"),
 		WithServiceVersion("override-service-version"),
-		WithExporterEndpoint("override-generic-url"),
+		WithExporterEndpoint("https://override-generic-url"),
 		WithExporterInsecure(false),
 		WithTracesExporterEndpoint("override-traces-url"),
 		WithTracesExporterInsecure(false),
@@ -386,9 +386,9 @@ func TestConfigurationOverrides(t *testing.T) {
 		WithLogger(logger),
 		WithErrorHandler(handler),
 		WithPropagators([]string{"b3"}),
-		WithExporterProtocol("defaultProtocol"),
-		WithMetricsExporterProtocol("metricsProtocol"),
-		WithTracesExporterProtocol("tracesProtocol"),
+		WithExporterProtocol("http/protobuf"),
+		WithMetricsExporterProtocol("http/protobuf"),
+		WithTracesExporterProtocol("http/protobuf"),
 	)
 
 	attributes := []attribute.KeyValue{
@@ -403,7 +403,7 @@ func TestConfigurationOverrides(t *testing.T) {
 	expected := &Config{
 		ServiceName:                     "override-service-name",
 		ServiceVersion:                  "override-service-version",
-		ExporterEndpoint:                "override-generic-url",
+		ExporterEndpoint:                "https://override-generic-url",
 		ExporterEndpointInsecure:        false,
 		TracesExporterEndpoint:          "override-traces-url",
 		TracesExporterEndpointInsecure:  false,
@@ -420,9 +420,9 @@ func TestConfigurationOverrides(t *testing.T) {
 		Propagators:                     []string{"b3"},
 		Resource:                        resource.NewWithAttributes(semconv.SchemaURL, attributes...),
 		Logger:                          logger,
-		ExporterProtocol:                "defaultProtocol",
-		TracesExporterProtocol:          "tracesProtocol",
-		MetricsExporterProtocol:         "metricsProtocol",
+		ExporterProtocol:                "http/protobuf",
+		TracesExporterProtocol:          "http/protobuf",
+		MetricsExporterProtocol:         "http/protobuf",
 		errorHandler:                    handler,
 		Sampler:                         trace.AlwaysSample(),
 	}
@@ -717,6 +717,33 @@ func TestThatEndpointsFallBackCorrectly(t *testing.T) {
 			metricsInsecure: false,
 		},
 		{
+			name: "set grpc endpoint with https scheme and no port, add port as helper",
+			config: newConfig(
+				WithExporterEndpoint("https://generic-url"),
+				WithExporterProtocol("grpc"),
+			),
+			tracesEndpoint:  "generic-url:443",
+			metricsEndpoint: "generic-url:443",
+		},
+		{
+			name: "set grpc endpoint with https scheme and port, no update to port",
+			config: newConfig(
+				WithExporterEndpoint("https://generic-url:1234"),
+				WithExporterProtocol("grpc"),
+			),
+			tracesEndpoint:  "generic-url:1234",
+			metricsEndpoint: "generic-url:1234",
+		},
+		{
+			name: "set grpc endpoint with http scheme and port, no update to port",
+			config: newConfig(
+				WithExporterEndpoint("http://generic-url:1234"),
+				WithExporterProtocol("grpc"),
+			),
+			tracesEndpoint:  "generic-url:1234",
+			metricsEndpoint: "generic-url:1234",
+		},
+		{
 			name:            "defaults",
 			config:          newConfig(),
 			tracesEndpoint:  "localhost:4317",
@@ -748,7 +775,7 @@ func TestHttpProtoDefaultsToCorrectHostAndPort(t *testing.T) {
 
 	shutdown, _ := ConfigureOpenTelemetry(
 		WithLogger(logger),
-		WithExporterEndpoint(strings.TrimPrefix(ts.URL, "http://")),
+		WithExporterEndpoint(ts.URL),
 		WithExporterInsecure(true),
 		WithExporterProtocol("http/protobuf"),
 	)
@@ -816,19 +843,19 @@ func setenv(key string, value string) {
 }
 
 func setEnvironment() {
-	setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "generic-url")
+	setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://generic-url")
 	setenv("OTEL_EXPORTER_OTLP_INSECURE", "true")
-	setenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "traces-url")
+	setenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "http://traces-url")
 	setenv("OTEL_EXPORTER_OTLP_TRACES_INSECURE", "true")
 	setenv("OTEL_SERVICE_NAME", "test-service-name")
 	setenv("OTEL_SERVICE_VERSION", "test-service-version")
-	setenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "metrics-url")
+	setenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "http://metrics-url")
 	setenv("OTEL_EXPORTER_OTLP_METRICS_INSECURE", "true")
 	setenv("OTEL_METRICS_ENABLED", "false")
 	setenv("OTEL_LOG_LEVEL", "debug")
 	setenv("OTEL_PROPAGATORS", "b3,w3c")
 	setenv("OTEL_RESOURCE_ATTRIBUTES", "service.name=test-service-name-b")
-	setenv("OTEL_EXPORTER_OTLP_PROTOCOL", "foobar")
+	setenv("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc")
 }
 
 func unsetEnvironment() {
