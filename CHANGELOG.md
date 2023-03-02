@@ -4,8 +4,8 @@
 
 - Improve behavior for handling custom endpoints (#11) | [@JamieDanielson](https://github.com/JamieDanielson)
 - Add example and smoke tests (#7) | [@JamieDanielson](https://github.com/JamieDanielson)
-- Bump OTel dependenceis to latest | [@MikeGoldsmith](https://github.com/MikeGoldsmith)
-- Add explicit version to go get command | [@MikeGoldsmith](https://github.com/MikeGoldsmith)
+- Bump OTel dependenceis to latest (#14) | [@MikeGoldsmith](https://github.com/MikeGoldsmith)
+- Add explicit version to go get command (#15) | [@MikeGoldsmith](https://github.com/MikeGoldsmith)
 
 ## v0.2.0 (2023-02-01)
 
