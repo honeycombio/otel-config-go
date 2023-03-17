@@ -568,6 +568,7 @@ func setupTracing(c *Config) (func() error, error) {
 		Resource:       c.Resource,
 		Propagators:    c.Propagators,
 		SpanProcessors: c.SpanProcessors,
+		Sampler:        c.Sampler,
 	})
 }
 
