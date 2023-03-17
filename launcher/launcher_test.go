@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/otel"
@@ -73,9 +74,13 @@ func (logger *testLogger) requireNotContains(t *testing.T, expected string) {
 // spin up tests that don't need to wait for a timeout trying to send data.
 type dummyTraceServer struct {
 	collectortrace.UnimplementedTraceServiceServer
+
+	recievedExportTraceServiceRequests []*collectortrace.ExportTraceServiceRequest
 }
 
-func (*dummyTraceServer) Export(ctx context.Context, req *collectortrace.ExportTraceServiceRequest) (*collectortrace.ExportTraceServiceResponse, error) {
+func (s *dummyTraceServer) Export(ctx context.Context, req *collectortrace.ExportTraceServiceRequest) (*collectortrace.ExportTraceServiceResponse, error) {
+	s.recievedExportTraceServiceRequests = append(s.recievedExportTraceServiceRequests, req)
+
 	return &collectortrace.ExportTraceServiceResponse{}, nil
 }
 
@@ -90,8 +95,12 @@ func (*dummyMetricsServer) Export(ctx context.Context, req *collectormetrics.Exp
 // dummyGRPCListener is a test helper that builds a dummy grpc server that does nothing but
 // returns quickly so that we don't have to wait for timeouts.
 func dummyGRPCListener() func() {
+	return dummyGRPCListenerWithTraceServer(&dummyTraceServer{})
+}
+
+func dummyGRPCListenerWithTraceServer(traceServer collectortrace.TraceServiceServer) func() {
 	grpcServer := grpc.NewServer()
-	collectortrace.RegisterTraceServiceServer(grpcServer, &dummyTraceServer{})
+	collectortrace.RegisterTraceServiceServer(grpcServer, traceServer)
 	collectormetrics.RegisterMetricsServiceServer(grpcServer, &dummyMetricsServer{})
 
 	// we listen on localhost, not 0.0.0.0, because otherwise firewalls can get upset
@@ -800,6 +809,40 @@ func TestCanConfigureCustomSampler(t *testing.T) {
 	assert.Same(t, config.Sampler, sampler)
 }
 
+func TestCanUseCustomSampler(t *testing.T) {
+	expectedSamplerProvidedAttribute := attribute.String("test", "value")
+	sampler := &testSampler{
+		decsision: trace.RecordAndSample,
+		attributes: []attribute.KeyValue{
+			expectedSamplerProvidedAttribute,
+		},
+	}
+
+	traceServer := &dummyTraceServer{}
+	stopper := dummyGRPCListenerWithTraceServer(traceServer)
+	defer stopper()
+
+	shutdown, _ := ConfigureOpenTelemetry(
+		WithSampler(sampler),
+		withTestExporters(),
+	)
+
+	tracer := otel.GetTracerProvider().Tracer("launcher-tests")
+	_, span := tracer.Start(context.Background(), "test-span")
+	span.End()
+	shutdown()
+
+	spans := traceServer.recievedExportTraceServiceRequests[0].ResourceSpans[0].ScopeSpans[0].Spans
+	require.Equal(t, 1, len(spans), "Should only be one span")
+
+	attrs := spans[0].Attributes
+	require.Equal(t, 1, len(attrs), "Should only be one attribute")
+
+	attr := attrs[0]
+	assert.Equal(t, string(expectedSamplerProvidedAttribute.Key), string(attr.Key))
+	assert.Equal(t, expectedSamplerProvidedAttribute.Value.AsString(), attr.Value.GetStringValue())
+}
+
 func TestGenericAndSignalHeadersAreCombined(t *testing.T) {
 	ValidateConfig = func(c *Config) error {
 		assert.Equal(t, map[string]string{
@@ -827,10 +870,13 @@ func TestGenericAndSignalHeadersAreCombined(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-type testSampler struct{}
+type testSampler struct {
+	decsision  trace.SamplingDecision
+	attributes []attribute.KeyValue
+}
 
 func (ts *testSampler) ShouldSample(parameters trace.SamplingParameters) trace.SamplingResult {
-	return trace.SamplingResult{}
+	return trace.SamplingResult{Decision: trace.RecordAndSample, Attributes: ts.attributes}
 }
 
 func (ts *testSampler) Description() string {
