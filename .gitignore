@@ -1,0 +1,3 @@
+## smoke test artifacts
+/smoke-tests/collector/**/**
+/smoke-tests/report.xml
