@@ -1,5 +1,15 @@
 # otel-launcher-go changelog
 
+## v0.3.1 (2023-03-27)
+
+### Fixes
+
+- fix: `launcher.WithSampler` doesn't get passed all the way through (#17) | [@thomasdesr](https://github.com/thomasdesr)
+
+### Maintenance
+
+- maint: bump semconv to 1.18 (#19) | [@pkanal](https://github.com/pkanal)
+
 ## v0.3.0 (2023-03-02)
 
 - Improve behavior for handling custom endpoints (#11) | [@JamieDanielson](https://github.com/JamieDanielson)
