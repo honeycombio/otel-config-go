@@ -1,5 +1,11 @@
 # otel-launcher-go changelog
 
+## v1.6.0 (2023-03-29)
+
+No changes have been made to the launcher itself since release v0.3.1.
+This new version is being used to help with go dependency resolution and conflicts with other packages.
+With this new version it should no longer be required to specify the exact version of the launcher to be downloaded.
+
 ## v0.3.1 (2023-03-27)
 
 ### Fixes
