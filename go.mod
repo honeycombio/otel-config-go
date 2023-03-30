@@ -3,7 +3,7 @@ module github.com/honeycombio/otel-launcher-go
 go 1.17
 
 require (
-	github.com/sethvargo/go-envconfig v0.8.2
+	github.com/sethvargo/go-envconfig v0.9.0
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/contrib/instrumentation/host v0.40.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.40.0
