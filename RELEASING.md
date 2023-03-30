@@ -2,7 +2,6 @@
 
 - Update `version.go` with version of release.
 - Update `CHANGELOG.md` with the changes since the last release.
-- Update `README.md` with new version in Getting Started section.
 - Commit changes, push, and open a release preparation pull request for review.
 - Once the pull request is merged, fetch the updated `main` branch.
 - Apply a tag for the new version on the merged commit (e.g. `git tag -a v1.2.3 -m "v1.2.3"`)
