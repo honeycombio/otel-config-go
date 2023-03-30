@@ -5,7 +5,7 @@ The Go Launcher is a configuration layer that chooses default values for configu
 ## Getting started
 
 ```bash
-go get github.com/honeycombio/otel-launcher-go@v0.3.1
+go get github.com/honeycombio/otel-launcher-go
 ```
 
 ## Configure
