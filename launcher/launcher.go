@@ -28,6 +28,9 @@ var (
 	// ValidateConfig is a function that a vendor can implement to provide additional validation after
 	// a configuration is built.
 	ValidateConfig func(*Config) error
+	// DefaultExporterEndpoint provides a way for vendors to update the default exporter endpoint address.
+	// Defaults to 'localhost'.
+	DefaultExporterEndpoint string = "localhost"
 )
 
 // These are strings because they get appended to the host.
@@ -291,7 +294,7 @@ func (l *defaultHandler) Handle(err error) {
 // vary depending on the protocol chosen. If not overridden by explicit configuration, it will
 // be overridden with an appropriate default upon initialization.
 type Config struct {
-	ExporterEndpoint                string   `env:"OTEL_EXPORTER_OTLP_ENDPOINT,default=localhost"`
+	ExporterEndpoint                string   `env:"OTEL_EXPORTER_OTLP_ENDPOINT"`
 	ExporterEndpointInsecure        bool     `env:"OTEL_EXPORTER_OTLP_INSECURE,default=false"`
 	TracesExporterEndpoint          string   `env:"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"`
 	TracesExporterEndpointInsecure  bool     `env:"OTEL_EXPORTER_OTLP_TRACES_INSECURE"`
@@ -333,6 +336,10 @@ func newConfig(opts ...Option) *Config {
 	envError := envconfig.Process(context.Background(), c)
 	if envError != nil {
 		c.Logger.Fatalf("environment error: %v", envError)
+	}
+	// if exporter endpoint is not set using an env var, use the configured default
+	if c.ExporterEndpoint == "" {
+		c.ExporterEndpoint = DefaultExporterEndpoint
 	}
 
 	// If a vendor has specific options to add, add them to opts
