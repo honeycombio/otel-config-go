@@ -870,6 +870,30 @@ func TestGenericAndSignalHeadersAreCombined(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestCanSetDefaultExporterEndpoint(t *testing.T) {
+	DefaultExporterEndpoint = "http://custom.endpoint"
+	config := newConfig()
+	assert.Equal(t, "http://custom.endpoint", config.ExporterEndpoint)
+}
+
+func TestCustomDefaultExporterEndpointDoesNotReplaceEnvVar(t *testing.T) {
+	setEnvironment()
+	DefaultExporterEndpoint = "http://custom.endpoint"
+	config := newConfig()
+	assert.Equal(t, "http://generic-url", config.ExporterEndpoint)
+	unsetEnvironment()
+}
+
+func TestCustomDefaultExporterEndpointDoesNotReplaceOption(t *testing.T) {
+	setEnvironment()
+	DefaultExporterEndpoint = "http://http://custom.endpoint"
+	config := newConfig(
+		WithExporterEndpoint("http://other.endpoint"),
+	)
+	assert.Equal(t, "http://other.endpoint", config.ExporterEndpoint)
+	unsetEnvironment()
+}
+
 type testSampler struct {
 	decsision  trace.SamplingDecision
 	attributes []attribute.KeyValue
