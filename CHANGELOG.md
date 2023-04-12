@@ -1,5 +1,18 @@
 # otel-launcher-go changelog
 
+## v1.7.0 (2023-04-11)
+
+### Enhancements
+
+- feat: Allow vendors to set default exporter endpoint (#26) | [@MikeGoldsmith](https://github.com/MikeGoldsmith)
+
+### Maintenance
+
+- ci: add go 1.20 to ci (#25) | [@vreynolds](https://github.com/vreynolds)
+- maint: add dependabot to project (#22) | [@JamieDanielson](https://github.com/JamieDanielson)
+- maint(deps): bump github.com/sethvargo/go-envconfig from 0.8.2 to 0.9.0 (#24)
+- maint(deps): bump google.golang.org/grpc from 1.53.0 to 1.54.0 (#23)
+
 ## v1.6.0 (2023-03-29)
 
 No changes have been made to the launcher itself since release v0.3.1.
