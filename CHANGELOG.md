@@ -1,4 +1,4 @@
-# otel-launcher-go changelog
+# otel-config-go changelog
 
 ## v1.7.0 (2023-04-11)
 

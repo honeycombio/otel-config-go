@@ -60,7 +60,7 @@ func newTraceExporter(protocol Protocol, endpoint string, insecure bool, headers
 	case "http/protobuf":
 		return newHTTPTraceExporter(endpoint, insecure, headers)
 	case "http/json":
-		return nil, errors.New("http/json is currently unsupported by this launcher")
+		return nil, errors.New("http/json is currently unsupported")
 	default:
 		return nil, errors.New("'" + string(protocol) + "' is not a supported protocol")
 	}
