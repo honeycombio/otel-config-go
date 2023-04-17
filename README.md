@@ -1,4 +1,4 @@
-# otel-config-go
+# otel-config-go (formerly otel-launcher-go)
 
 This project is a configuration layer that chooses default values for configuration options that many OpenTelemetry users would ultimately configure manually, allowing for minimal code to quickly instrument with OpenTelemetry.
 
