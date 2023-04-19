@@ -6,11 +6,11 @@ import (
 
 	"go.opentelemetry.io/otel"
 
-	"github.com/honeycombio/otel-launcher-go/launcher"
+	"github.com/honeycombio/otel-config-go/otelconfig"
 )
 
 func main() {
-	otelShutdown, err := launcher.ConfigureOpenTelemetry()
+	otelShutdown, err := otelconfig.ConfigureOpenTelemetry()
 
 	if err != nil {
 		log.Fatalf("error setting up OTel SDK - %e", err)

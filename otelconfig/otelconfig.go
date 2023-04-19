@@ -1,4 +1,4 @@
-package launcher
+package otelconfig
 
 import (
 	"context"
@@ -11,8 +11,7 @@ import (
 	"strings"
 	"time"
 
-	// TODO: before merging, update to "go.opentelemetry.io/contrib/launcher".
-	"github.com/honeycombio/otel-launcher-go/launcher/pipelines"
+	"github.com/honeycombio/otel-config-go/otelconfig/pipelines"
 	"github.com/sethvargo/go-envconfig"
 
 	"go.opentelemetry.io/otel"
@@ -252,7 +251,7 @@ type Logger interface {
 	Debugf(format string, v ...interface{})
 }
 
-// WithLogger sets up the logger to be used by the launcher.
+// WithLogger sets up the logger to be used.
 func WithLogger(logger Logger) Option {
 	// In order to enable the environment parsing to send an error to the specified logger
 	// we need to cache a copy of the logger in a package variable so that newConfig can use it
@@ -362,8 +361,8 @@ func newConfig(opts ...Option) *Config {
 	return c
 }
 
-// Launcher is the object we're here for; it implements the initialization of Open Telemetry.
-type Launcher struct {
+// OtelConfig is the object we're here for; it implements the initialization of Open Telemetry.
+type OtelConfig struct {
 	config        *Config
 	shutdownFuncs []func() error
 }
@@ -379,7 +378,7 @@ func newResource(c *Config) *resource.Resource {
 	}
 
 	attributes := []attribute.KeyValue{
-		semconv.TelemetrySDKNameKey.String("launcher"),
+		semconv.TelemetrySDKNameKey.String("otelconfig"),
 		semconv.TelemetrySDKLanguageGo,
 		semconv.TelemetrySDKVersionKey.String(version),
 	}
@@ -619,7 +618,7 @@ func ConfigureOpenTelemetry(opts ...Option) (func(), error) {
 		otel.SetErrorHandler(c.errorHandler)
 	}
 
-	launcher := Launcher{
+	otelConfig := OtelConfig{
 		config: c,
 	}
 
@@ -630,15 +629,15 @@ func ConfigureOpenTelemetry(opts ...Option) (func(), error) {
 			continue
 		}
 		if shutdown != nil {
-			launcher.shutdownFuncs = append(launcher.shutdownFuncs, shutdown)
+			otelConfig.shutdownFuncs = append(otelConfig.shutdownFuncs, shutdown)
 		}
 	}
-	return launcher.Shutdown, nil
+	return otelConfig.Shutdown, nil
 }
 
 // Shutdown is the function called to shut down OpenTelemetry. It invokes any registered
 // shutdown functions.
-func (ls Launcher) Shutdown() {
+func (ls OtelConfig) Shutdown() {
 	// call config shutdown functions first
 	for _, shutdown := range ls.config.ShutdownFunctions {
 		err := shutdown(ls.config)

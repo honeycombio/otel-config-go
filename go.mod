@@ -1,4 +1,4 @@
-module github.com/honeycombio/otel-launcher-go
+module github.com/honeycombio/otel-config-go
 
 go 1.17
 

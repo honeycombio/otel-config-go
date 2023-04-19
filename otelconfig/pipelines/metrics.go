@@ -64,7 +64,7 @@ func newMetricsExporter(protocol Protocol, endpoint string, insecure bool, heade
 	case "http/protobuf":
 		return newHTTPMetricsExporter(endpoint, insecure, headers)
 	case "http/json":
-		return nil, errors.New("http/json is currently unsupported by this launcher")
+		return nil, errors.New("http/json is currently unsupported")
 	default:
 		return nil, errors.New("'" + string(protocol) + "' is not a supported protocol")
 	}

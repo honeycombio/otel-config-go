@@ -1,4 +1,4 @@
-package launcher
+package otelconfig
 
 import (
 	"context"
@@ -281,7 +281,7 @@ func TestDefaultConfig(t *testing.T) {
 	attributes := []attribute.KeyValue{
 		attribute.String("host.name", host()),
 		attribute.String("service.version", "unknown"),
-		attribute.String("telemetry.sdk.name", "launcher"),
+		attribute.String("telemetry.sdk.name", "otelconfig"),
 		attribute.String("telemetry.sdk.language", "go"),
 		attribute.String("telemetry.sdk.version", version),
 	}
@@ -344,7 +344,7 @@ func TestEnvironmentVariables(t *testing.T) {
 		attribute.String("host.name", host()),
 		attribute.String("service.name", "test-service-name"),
 		attribute.String("service.version", "test-service-version"),
-		attribute.String("telemetry.sdk.name", "launcher"),
+		attribute.String("telemetry.sdk.name", "otelconfig"),
 		attribute.String("telemetry.sdk.language", "go"),
 		attribute.String("telemetry.sdk.version", version),
 	}
@@ -404,7 +404,7 @@ func TestConfigurationOverrides(t *testing.T) {
 		attribute.String("host.name", host()),
 		attribute.String("service.name", "override-service-name"),
 		attribute.String("service.version", "override-service-version"),
-		attribute.String("telemetry.sdk.name", "launcher"),
+		attribute.String("telemetry.sdk.name", "otelconfig"),
 		attribute.String("telemetry.sdk.language", "go"),
 		attribute.String("telemetry.sdk.version", version),
 	}
@@ -565,7 +565,7 @@ func TestConfigureResourcesAttributes(t *testing.T) {
 		attribute.String("service.name", "test-service"),
 		attribute.String("service.version", "test-version"),
 		attribute.String("telemetry.sdk.language", "go"),
-		attribute.String("telemetry.sdk.name", "launcher"),
+		attribute.String("telemetry.sdk.name", "otelconfig"),
 		attribute.String("telemetry.sdk.version", version),
 	}
 	assert.Equal(t, expected, resource.Attributes())
@@ -581,7 +581,7 @@ func TestConfigureResourcesAttributes(t *testing.T) {
 		attribute.String("service.name", "test-service"),
 		attribute.String("service.version", "test-version"),
 		attribute.String("telemetry.sdk.language", "go"),
-		attribute.String("telemetry.sdk.name", "launcher"),
+		attribute.String("telemetry.sdk.name", "otelconfig"),
 		attribute.String("telemetry.sdk.version", version),
 	}
 	assert.Equal(t, expected, resource.Attributes())
@@ -597,7 +597,7 @@ func TestConfigureResourcesAttributes(t *testing.T) {
 		attribute.String("service.name", "test-service-b"),
 		attribute.String("service.version", "test-version"),
 		attribute.String("telemetry.sdk.language", "go"),
-		attribute.String("telemetry.sdk.name", "launcher"),
+		attribute.String("telemetry.sdk.name", "otelconfig"),
 		attribute.String("telemetry.sdk.version", version),
 	}
 	assert.Equal(t, expected, resource.Attributes())
@@ -790,7 +790,7 @@ func TestHttpProtoDefaultsToCorrectHostAndPort(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	tracer := otel.GetTracerProvider().Tracer("launcher-tests")
+	tracer := otel.GetTracerProvider().Tracer("otelconfig-tests")
 	_, span := tracer.Start(ctx, "test-span")
 	span.End()
 	shutdown()
@@ -827,7 +827,7 @@ func TestCanUseCustomSampler(t *testing.T) {
 		withTestExporters(),
 	)
 
-	tracer := otel.GetTracerProvider().Tracer("launcher-tests")
+	tracer := otel.GetTracerProvider().Tracer("otelconfig-tests")
 	_, span := tracer.Start(context.Background(), "test-span")
 	span.End()
 	shutdown()

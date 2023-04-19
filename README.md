@@ -1,11 +1,11 @@
-# Honeycomb Go Launcher
+# otel-config-go (formerly otel-launcher-go)
 
-The Go Launcher is a configuration layer that chooses default values for configuration options that many OpenTelemetry users would ultimately configure manually, allowing for minimal code to quickly instrument with OpenTelemetry.
+This project is a configuration layer that chooses default values for configuration options that many OpenTelemetry users would ultimately configure manually, allowing for minimal code to quickly instrument with OpenTelemetry.
 
 ## Getting started
 
 ```bash
-go get github.com/honeycombio/otel-launcher-go
+go get github.com/honeycombio/otel-config-go
 ```
 
 ## Configure
@@ -13,28 +13,28 @@ go get github.com/honeycombio/otel-launcher-go
 Minimal setup - by default will send all telemetry via GRPC to `localhost:4317`
 
 ```go
-import "github.com/honeycombio/otel-launcher-go/launcher"
+import "github.com/honeycombio/otel-config-go/otelconfig"
 
 func main() {
-    lnchr, err := launcher.ConfigureOpenTelemetry()
-    defer lnchr.Shutdown()
+    otelShutdown, err := otelconfig.ConfigureOpenTelemetry()
+    defer otelShutdown()
 }
 ```
 
 You can set headers directly instead.
 
 ```go
-import "github.com/honeycombio/otel-launcher-go/launcher"
+import "github.com/honeycombio/otel-config-go/otelconfig"
 
 func main() {
-    lnchr, err := launcher.ConfigureOpenTelemetry(
-        launcher.WithServiceName("service-name"),
-        launcher.WithHeaders(map[string]string{
+    otelShutdown, err := otelconfig.ConfigureOpenTelemetry(
+        otelconfig.WithServiceName("service-name"),
+        otelconfig.WithHeaders(map[string]string{
             "service-auth-key": "value",
             "service-useful-field": "testing",
         }),
     )
-    defer lnchr.Shutdown()
+    defer otelShutdown()
 }
 ```
 
