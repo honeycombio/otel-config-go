@@ -4,6 +4,10 @@
 
 ### Renamed to otel-config-go
 
+[How to migrate to `otel-config-go` from `otel-launcher-go`](/README.md#migrating-from-otel-launcher-go-to-otel-config-go)
+
+### 💥 Breaking Changes 💥
+
 - maint: Rename to otelconfig (#28) | [@MikeGoldsmith](https://github.com/MikeGoldsmith)
 
 ## v1.7.0 (2023-04-11)

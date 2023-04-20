@@ -38,6 +38,10 @@ func main() {
 }
 ```
 
+### Migrating from otel-launcher-go to otel-config-go
+
+As of v1.8.0, this package has been renamed from `otel-launcher-go` to `otel-config-go`. When migrating to use the renamed package, all references to `launcher` should be changed to `otelconfig`.
+
 ## Configuration Options
 
 | Config Option               | Env Variable                        | Required | Default              |
