@@ -1,6 +1,6 @@
 # otel-config-go changelog
 
-## v1.8.0 (2023-04-20)
+## v2.0.0 (2023-04-20)
 
 ### Renamed to otel-config-go
 
