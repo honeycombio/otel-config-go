@@ -1,5 +1,11 @@
 # otel-config-go changelog
 
+## v1.8.0 (2023-04-20)
+
+### Renamed to otel-config-go
+
+- maint: Rename to otelconfig (#28) | [@MikeGoldsmith](https://github.com/MikeGoldsmith)
+
 ## v1.7.0 (2023-04-11)
 
 ### Enhancements
