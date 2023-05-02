@@ -625,7 +625,7 @@ func ConfigureOpenTelemetry(opts ...Option) (func(), error) {
 	for _, setup := range []setupFunc{setupTracing, setupMetrics} {
 		shutdown, err := setup(c)
 		if err != nil {
-			return nil, fmt.Errorf("setup error: %w", err)
+			return otelConfig.Shutdown, fmt.Errorf("setup error: %w", err)
 		}
 		if shutdown != nil {
 			otelConfig.shutdownFuncs = append(otelConfig.shutdownFuncs, shutdown)
