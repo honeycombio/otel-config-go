@@ -219,20 +219,19 @@ func TestInvalidMetricsPushIntervalEnv(t *testing.T) {
 	setenv("OTEL_EXPORTER_OTLP_METRICS_PERIOD", "300million")
 
 	logger := &testLogger{}
-	shutdown, _ := ConfigureOpenTelemetry(
+	shutdown, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithServiceName("test-service"),
 		withTestExporters(),
 	)
 	defer shutdown()
-
-	logger.requireContains(t, "setup error: invalid metric reporting period")
+	assert.ErrorContains(t, err, "setup error: invalid metric reporting period")
 	unsetEnvironment()
 }
 
 func TestInvalidMetricsPushIntervalConfig(t *testing.T) {
 	logger := &testLogger{}
-	shutdown, _ := ConfigureOpenTelemetry(
+	shutdown, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithServiceName("test-service"),
 		WithMetricsReportingPeriod(-time.Second),
@@ -240,7 +239,7 @@ func TestInvalidMetricsPushIntervalConfig(t *testing.T) {
 	)
 	defer shutdown()
 
-	logger.requireContains(t, "setup error: invalid metric reporting period")
+	assert.ErrorContains(t, err, "setup error: invalid metric reporting period")
 	unsetEnvironment()
 }
 
@@ -537,13 +536,8 @@ func TestConfigurePropagators3(t *testing.T) {
 		WithPropagators([]string{"invalid"}),
 		withTestExporters(),
 	)
-	assert.NoError(t, err)
 	defer shutdown()
-
-	expected := "invalid configuration: unsupported propagators. Supported options: b3,baggage,tracecontext,ottrace"
-	if !strings.Contains(logger.output[0], expected) {
-		t.Errorf("\nString not found: %v\nIn: %v", expected, logger.output[0])
-	}
+	assert.ErrorContains(t, err, "invalid configuration: unsupported propagators. Supported options: b3,baggage,tracecontext,ottrace")
 }
 
 func host() string {
