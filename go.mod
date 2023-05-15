@@ -1,6 +1,6 @@
 module github.com/honeycombio/otel-config-go
 
-go 1.17
+go 1.20
 
 require (
 	github.com/sethvargo/go-envconfig v0.9.0
