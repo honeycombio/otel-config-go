@@ -1,5 +1,20 @@
 # otel-config-go changelog
 
+## v1.9.0 (2023-05-15)
+
+### 💥 Breaking Changes 💥
+
+- maint: drop go 1.18 (#37) | [@vreynolds](https://github.com/vreynolds)
+
+### Fixes
+
+- fix: Don't fatal error when we can return an error (#36) | [@kentquirk](https://github.com/kentquirk)
+
+### Maintenance
+
+- maint: cleanup go versions (#38) | [@vreynolds](https://github.com/vreynolds)
+- maint(deps): bump go.opentelemetry.io/otel from 1.14.0 to 1.15.1 (#35)
+
 ## v1.8.0 (2023-04-20)
 
 ### Renamed to otel-config-go
