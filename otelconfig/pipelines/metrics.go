@@ -12,9 +12,9 @@ import (
 
 	hostMetrics "go.opentelemetry.io/contrib/instrumentation/host"
 	runtimeMetrics "go.opentelemetry.io/contrib/instrumentation/runtime"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
-	metricglobal "go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/sdk/metric"
 )
 
@@ -50,7 +50,7 @@ func NewMetricsPipeline(c PipelineConfig) (func() error, error) {
 		return nil, fmt.Errorf("failed to start host metrics: %v", err)
 	}
 
-	metricglobal.SetMeterProvider(meterProvider)
+	otel.SetMeterProvider(meterProvider)
 	return func() error {
 		return meterProvider.Shutdown(context.Background())
 	}, nil
