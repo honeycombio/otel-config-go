@@ -154,6 +154,14 @@ func WithResourceAttributes(attributes map[string]string) Option {
 	}
 }
 
+// WithResourceOption configures options on the resource; These are appended
+// after the default options and can override them.
+func WithResourceOption(option resource.Option) Option {
+	return func(c *Config) {
+		c.ResourceOptions = append(c.ResourceOptions, option)
+	}
+}
+
 // WithPropagators configures propagators.
 func WithPropagators(propagators []string) Option {
 	return func(c *Config) {
@@ -316,6 +324,7 @@ type Config struct {
 	ResourceAttributes              map[string]string
 	SpanProcessors                  []trace.SpanProcessor
 	Sampler                         trace.Sampler
+	ResourceOptions                 []resource.Option
 	Resource                        *resource.Resource
 	Logger                          Logger                  `json:"-"`
 	ShutdownFunctions               []func(c *Config) error `json:"-"`
@@ -411,11 +420,17 @@ func newResource(c *Config) *resource.Resource {
 
 	attributes = append(r.Attributes(), attributes...)
 
+	baseOptions := []resource.Option{
+		resource.WithSchemaURL(semconv.SchemaURL),
+		resource.WithAttributes(attributes...),
+	}
+
+	options := append(baseOptions, c.ResourceOptions...)
+
 	// These detectors can't actually fail, ignoring the error.
 	r, _ = resource.New(
 		context.Background(),
-		resource.WithSchemaURL(semconv.SchemaURL),
-		resource.WithAttributes(attributes...),
+		options...,
 	)
 
 	// Note: There are new detectors we may wish to take advantage
