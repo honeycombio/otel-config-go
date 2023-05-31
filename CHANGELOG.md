@@ -1,5 +1,17 @@
 # otel-config-go changelog
 
+## v1.9.1 (2023-05-31)
+
+### Fixes
+
+- Fix for a dependency resolution error where `go.opentelemetry.io/otel/metric/global` cannot be found for otel-config-go.
+  The dependency update for otel packages in #40 below—thanks, [Justin Burnham](https://github.com/jburnham)!—includes an update for our import of metrics as the OTel Go metrics implementation stablizes in v1.16.0.
+
+### Maintenance
+
+- maint(deps): bump github.com/stretchr/testify from 1.8.2 to 1.8.4 (#44) [dependabot](https://github.com/apps/dependabot)
+- maint(deps): bump go.opentelemetry.io/otel from 1.15.1 to 1.16.0 (#40) [@jburnham](https://github.com/jburnham)
+
 ## v1.9.0 (2023-05-15)
 
 ### 💥 Breaking Changes 💥
