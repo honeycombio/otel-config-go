@@ -377,6 +377,15 @@ func TestEnvironmentVariables(t *testing.T) {
 	unsetEnvironment()
 }
 
+type testDetector struct{}
+
+var _ resource.Detector = (*testDetector)(nil)
+
+// Detect implements resource.Detector.
+func (testDetector) Detect(ctx context.Context) (*resource.Resource, error) {
+	return resource.New(ctx)
+}
+
 func TestConfigurationOverrides(t *testing.T) {
 	setEnvironment()
 	logger := &testLogger{}
@@ -398,6 +407,7 @@ func TestConfigurationOverrides(t *testing.T) {
 		WithMetricsExporterProtocol("http/protobuf"),
 		WithTracesExporterProtocol("http/protobuf"),
 		WithResourceOption(resource.WithAttributes(attribute.String("host.name", "hardcoded-hostname"))),
+		WithResourceOption(resource.WithDetectors(&testDetector{})),
 	)
 
 	attributes := []attribute.KeyValue{
@@ -436,6 +446,7 @@ func TestConfigurationOverrides(t *testing.T) {
 		Sampler:                         trace.AlwaysSample(),
 		ResourceOptions: []resource.Option{
 			resource.WithAttributes(attribute.String("host.name", "hardcoded-hostname")),
+			resource.WithDetectors(&testDetector{}),
 		},
 	}
 	assert.Equal(t, expected, config)
