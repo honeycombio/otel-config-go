@@ -1,11 +1,20 @@
 # otel-config-go changelog
 
-## v1.9.1 (2023-05-31)
+## v1.10.0 (2023-05-31)
+
+### 💥 Breaking Changes 💥
+
+Packages for the Metrics API have been moved as the API implementation has stablized in OTel Go v1.16.0.
+
+- `go.opentelemetry.io/otel/metric/global` -> `go.opentelemetry.io/otel`
+- `go.opentelemetry.io/otel/metric/instrument` -> `go.opentelemetry.io/otel/metric`
+
+Imports of these packages in your application will need to be updated.
 
 ### Fixes
 
-- Fix for a dependency resolution error where `go.opentelemetry.io/otel/metric/global` cannot be found for otel-config-go.
-  The dependency update for otel packages in #40 below—thanks, [Justin Burnham](https://github.com/jburnham)!—includes an update for our import of metrics as the OTel Go metrics implementation stablizes in v1.16.0.
+Fix for the breaking change described above where `go.opentelemetry.io/otel/metric/global` cannot be found for otel-config-go.
+The dependency update for otel packages in #40 below—thanks, [Justin Burnham](https://github.com/jburnham)!—includes an update to our import of the metrics package.
 
 ### Maintenance
 
