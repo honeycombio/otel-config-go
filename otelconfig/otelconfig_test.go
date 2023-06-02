@@ -377,15 +377,6 @@ func TestEnvironmentVariables(t *testing.T) {
 	unsetEnvironment()
 }
 
-type testDetector struct{}
-
-var _ resource.Detector = (*testDetector)(nil)
-
-// Detect implements resource.Detector.
-func (testDetector) Detect(ctx context.Context) (*resource.Resource, error) {
-	return resource.New(ctx)
-}
-
 func TestConfigurationOverrides(t *testing.T) {
 	setEnvironment()
 	logger := &testLogger{}
@@ -406,12 +397,10 @@ func TestConfigurationOverrides(t *testing.T) {
 		WithExporterProtocol("http/protobuf"),
 		WithMetricsExporterProtocol("http/protobuf"),
 		WithTracesExporterProtocol("http/protobuf"),
-		WithResourceOption(resource.WithAttributes(attribute.String("host.name", "hardcoded-hostname"))),
-		WithResourceOption(resource.WithDetectors(&testDetector{})),
 	)
 
 	attributes := []attribute.KeyValue{
-		attribute.String("host.name", "hardcoded-hostname"),
+		attribute.String("host.name", host()),
 		attribute.String("service.name", "override-service-name"),
 		attribute.String("service.version", "override-service-version"),
 		attribute.String("telemetry.sdk.name", "otelconfig"),
@@ -444,10 +433,6 @@ func TestConfigurationOverrides(t *testing.T) {
 		MetricsExporterProtocol:         "http/protobuf",
 		errorHandler:                    handler,
 		Sampler:                         trace.AlwaysSample(),
-		ResourceOptions: []resource.Option{
-			resource.WithAttributes(attribute.String("host.name", "hardcoded-hostname")),
-			resource.WithDetectors(&testDetector{}),
-		},
 	}
 	assert.Equal(t, expected, config)
 	unsetEnvironment()
