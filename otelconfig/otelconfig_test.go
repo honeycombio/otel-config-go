@@ -334,21 +334,23 @@ func TestEnvironmentVariables(t *testing.T) {
 	setEnvironment()
 	logger := &testLogger{}
 	handler := &testErrorHandler{}
-	config := newConfig(
+	testConfig := newConfig(
 		WithLogger(logger),
 		WithErrorHandler(handler),
 	)
 
-	attributes := []attribute.KeyValue{
+	expectedConfiguredResource := resource.NewWithAttributes(
+		semconv.SchemaURL,
 		attribute.String("host.name", host()),
+		attribute.String("resource.clobber", "ENV_WON"),
 		attribute.String("service.name", "test-service-name"),
 		attribute.String("service.version", "test-service-version"),
 		attribute.String("telemetry.sdk.name", "otelconfig"),
 		attribute.String("telemetry.sdk.language", "go"),
 		attribute.String("telemetry.sdk.version", version),
-	}
+	)
 
-	expected := &Config{
+	expectedConfig := &Config{
 		ExporterEndpoint:                "http://generic-url",
 		ExporterEndpointInsecure:        true,
 		TracesExporterEndpoint:          "http://traces-url",
@@ -365,15 +367,15 @@ func TestEnvironmentVariables(t *testing.T) {
 		TracesHeaders:                   map[string]string{},
 		MetricsHeaders:                  map[string]string{},
 		ResourceAttributes:              map[string]string{},
-		ResourceAttributesFromEnv:       "service.name=test-service-name-b",
+		ResourceAttributesFromEnv:       "service.name=test-service-name-b,resource.clobber=ENV_WON",
 		Propagators:                     []string{"b3", "w3c"},
-		Resource:                        resource.NewWithAttributes(semconv.SchemaURL, attributes...),
+		Resource:                        expectedConfiguredResource,
 		Logger:                          logger,
 		ExporterProtocol:                "grpc",
 		errorHandler:                    handler,
 		Sampler:                         trace.AlwaysSample(),
 	}
-	assert.Equal(t, expected, config)
+	assert.Equal(t, expectedConfig, testConfig)
 	unsetEnvironment()
 }
 
@@ -390,7 +392,7 @@ func TestConfigurationOverrides(t *testing.T) {
 	setEnvironment()
 	logger := &testLogger{}
 	handler := &testErrorHandler{}
-	config := newConfig(
+	testConfig := newConfig(
 		WithServiceName("override-service-name"),
 		WithServiceVersion("override-service-version"),
 		WithExporterEndpoint("https://override-generic-url"),
@@ -406,20 +408,25 @@ func TestConfigurationOverrides(t *testing.T) {
 		WithExporterProtocol("http/protobuf"),
 		WithMetricsExporterProtocol("http/protobuf"),
 		WithTracesExporterProtocol("http/protobuf"),
-		WithResourceOption(resource.WithAttributes(attribute.String("host.name", "hardcoded-hostname"))),
+		WithResourceOption(resource.WithAttributes(
+			attribute.String("host.name", "hardcoded-hostname"),
+			attribute.String("resource.clobber", "CODE_WON"),
+		)),
 		WithResourceOption(resource.WithDetectors(&testDetector{})),
 	)
 
-	attributes := []attribute.KeyValue{
+	expectedConfiguredResource := resource.NewWithAttributes(
+		semconv.SchemaURL,
 		attribute.String("host.name", "hardcoded-hostname"),
+		attribute.String("resource.clobber", "ENV_WON"),
 		attribute.String("service.name", "override-service-name"),
 		attribute.String("service.version", "override-service-version"),
 		attribute.String("telemetry.sdk.name", "otelconfig"),
 		attribute.String("telemetry.sdk.language", "go"),
 		attribute.String("telemetry.sdk.version", version),
-	}
+	)
 
-	expected := &Config{
+	expectedConfig := &Config{
 		ServiceName:                     "override-service-name",
 		ServiceVersion:                  "override-service-version",
 		ExporterEndpoint:                "https://override-generic-url",
@@ -435,9 +442,9 @@ func TestConfigurationOverrides(t *testing.T) {
 		TracesHeaders:                   map[string]string{},
 		MetricsHeaders:                  map[string]string{},
 		ResourceAttributes:              map[string]string{},
-		ResourceAttributesFromEnv:       "service.name=test-service-name-b",
+		ResourceAttributesFromEnv:       "service.name=test-service-name-b,resource.clobber=ENV_WON",
 		Propagators:                     []string{"b3"},
-		Resource:                        resource.NewWithAttributes(semconv.SchemaURL, attributes...),
+		Resource:                        expectedConfiguredResource,
 		Logger:                          logger,
 		ExporterProtocol:                "http/protobuf",
 		TracesExporterProtocol:          "http/protobuf",
@@ -445,11 +452,14 @@ func TestConfigurationOverrides(t *testing.T) {
 		errorHandler:                    handler,
 		Sampler:                         trace.AlwaysSample(),
 		ResourceOptions: []resource.Option{
-			resource.WithAttributes(attribute.String("host.name", "hardcoded-hostname")),
+			resource.WithAttributes(
+				attribute.String("host.name", "hardcoded-hostname"),
+				attribute.String("resource.clobber", "CODE_WON"),
+			),
 			resource.WithDetectors(&testDetector{}),
 		},
 	}
-	assert.Equal(t, expected, config)
+	assert.Equal(t, expectedConfig, testConfig)
 	unsetEnvironment()
 }
 
@@ -933,7 +943,7 @@ func setEnvironment() {
 	setenv("OTEL_METRICS_ENABLED", "false")
 	setenv("OTEL_LOG_LEVEL", "debug")
 	setenv("OTEL_PROPAGATORS", "b3,w3c")
-	setenv("OTEL_RESOURCE_ATTRIBUTES", "service.name=test-service-name-b")
+	setenv("OTEL_RESOURCE_ATTRIBUTES", "service.name=test-service-name-b,resource.clobber=ENV_WON")
 	setenv("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc")
 }
 
