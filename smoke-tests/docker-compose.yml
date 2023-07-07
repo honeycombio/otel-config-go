@@ -17,7 +17,7 @@ x-app-base: &app_base
 
 services:
   collector:
-    image: otel/opentelemetry-collector:0.52.0
+    image: otel/opentelemetry-collector:0.81.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - "./collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml"
