@@ -49,7 +49,7 @@ As of v1.8.0, this package has been renamed from `otel-launcher-go` to `otel-con
 | WithServiceName             | OTEL_SERVICE_NAME                   | y        | -                    |
 | WithServiceVersion          | OTEL_SERVICE_VERSION                | n        | -                    |
 | WithHeaders                 | OTEL_EXPORTER_OTLP_HEADERS          | n        | {}                   |
-| WithProtocol                | OTEL_EXPORTER_OTLP_PROTOCOL         | n        | grpc                 |
+| WithExporterProtocol        | OTEL_EXPORTER_OTLP_PROTOCOL         | n        | grpc                 |
 | WithTracesExporterEndpoint  | OTEL_EXPORTER_OTLP_TRACES_ENDPOINT  | n        | localhost:4317       |
 | WithTracesExporterInsecure  | OTEL_EXPORTER_OTLP_TRACES_INSECURE  | n        | false                |
 | WithMetricsExporterEndpoint | OTEL_EXPORTER_OTLP_METRICS_ENDPOINT | n        | localhost:4317       |
