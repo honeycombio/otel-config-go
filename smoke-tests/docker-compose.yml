@@ -3,6 +3,7 @@ version: '3.0'
 x-env-base: &env_base
   OTEL_EXPORTER_OTLP_ENDPOINT: http://collector:4317
   OTEL_EXPORTER_OTLP_INSECURE: "true"
+  OTEL_RESOURCE_ATTRIBUTES: resource.example_set_in_env=ENV,resource.example_clobber=ENV_WON
   OTEL_SERVICE_NAME: "my-go-app"
   OTEL_METRICS_ENABLED: "false"
   DEBUG: "true"

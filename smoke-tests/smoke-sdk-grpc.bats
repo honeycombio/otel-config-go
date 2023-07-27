@@ -27,3 +27,18 @@ teardown_file() {
 	result=$(span_names_for ${TRACER_NAME})
 	assert_equal "$result" '"doing-things"'
 }
+
+@test "Resource attributes can be set via environment variable" {
+	env_result=$(spans_received | jq ".resource.attributes[] | select(.key == \"resource.example_set_in_env\") | .value.stringValue")
+	assert_equal "$env_result" '"ENV"'
+}
+
+@test "Resource attributes can be set in code" {
+	code_result=$(spans_received | jq ".resource.attributes[] | select(.key == \"resource.example_set_in_code\") | .value.stringValue")
+	assert_equal "$code_result" '"CODE"'
+}
+
+@test "Resource attributes set in code win over matching key set in environment" {
+	clobber_result=$(spans_received | jq ".resource.attributes[] | select(.key == \"resource.example_clobber\") | .value.stringValue")
+	assert_equal "$clobber_result" '"CODE_WON"'
+}
