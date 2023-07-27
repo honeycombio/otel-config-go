@@ -27,6 +27,7 @@ func main() {
 
 	defer otelShutdown()
 	tracer := otel.Tracer("my-app")
-	_, span := tracer.Start(context.Background(), "doing-things")
+	ctx := context.Background()
+	ctx, span := tracer.Start(ctx, "doing-things")
 	defer span.End()
 }
