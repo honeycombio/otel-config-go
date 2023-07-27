@@ -418,7 +418,7 @@ func TestConfigurationOverrides(t *testing.T) {
 	expectedConfiguredResource := resource.NewWithAttributes(
 		semconv.SchemaURL,
 		attribute.String("host.name", "hardcoded-hostname"),
-		attribute.String("resource.clobber", "ENV_WON"),
+		attribute.String("resource.clobber", "CODE_WON"),
 		attribute.String("service.name", "override-service-name"),
 		attribute.String("service.version", "override-service-version"),
 		attribute.String("telemetry.sdk.name", "otelconfig"),
