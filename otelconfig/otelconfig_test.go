@@ -3,6 +3,7 @@ package otelconfig
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -681,6 +682,41 @@ func TestConfigWithResourceAttributes(t *testing.T) {
 			v, ok = attrs.Value("attr2")
 			assert.Equal(t, "val2", v.AsString())
 			assert.True(t, ok)
+			return nil
+		}),
+		withTestExporters(),
+	)
+	defer shutdown()
+}
+
+func TestConfigWithResourceAttributesError(t *testing.T) {
+	stopper := dummyGRPCListener()
+	defer stopper()
+
+	logger := &testLogger{}
+	faultyResourceDetector := resource.StringDetector("", "", func() (string, error) {
+		return "", errors.New("faulty resource detector")
+	})
+
+	shutdown, _ := ConfigureOpenTelemetry(
+		WithLogger(logger),
+		WithResourceAttributes(map[string]string{
+			"attr1": "val1",
+			"attr2": "val2",
+		}),
+		WithResourceOption(resource.WithDetectors(faultyResourceDetector)),
+		WithShutdown(func(c *Config) error {
+			attrs := attribute.NewSet(c.Resource.Attributes()...)
+			v, ok := attrs.Value("attr1")
+			assert.Equal(t, "val1", v.AsString())
+			assert.True(t, ok)
+
+			v, ok = attrs.Value("attr2")
+			assert.Equal(t, "val2", v.AsString())
+			assert.True(t, ok)
+
+			logger.requireContains(t, "faulty resource detector")
+
 			return nil
 		}),
 		withTestExporters(),

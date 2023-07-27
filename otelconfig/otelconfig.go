@@ -427,11 +427,14 @@ func newResource(c *Config) *resource.Resource {
 
 	options := append(baseOptions, c.ResourceOptions...)
 
-	// These detectors can't actually fail, ignoring the error.
-	r, _ = resource.New(
+	r, err := resource.New(
 		context.Background(),
 		options...,
 	)
+
+	if err != nil {
+		c.Logger.Debugf("error applying resource options: %s", err)
+	}
 
 	// Note: There are new detectors we may wish to take advantage
 	// of, now available in the default SDK (e.g., WithProcess(),
