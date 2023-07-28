@@ -8,8 +8,8 @@
 
 ### Maintenance
 
-- docs: Update WithExporterProtocol in README.md (#54)
-- maint: update ubuntu and collector versions in CI (#53)
+- docs: Update WithExporterProtocol in README.md (#54) | @NicholasGWK
+- maint: update ubuntu and collector versions in CI (#53) | @JamieDanielson
 - maint(deps): bump google.golang.org/grpc from 1.56.2 to 1.57.0 (#56)
 - maint(deps): bump go.opentelemetry.io/proto/otlp from 0.19.0 to 1.0.0 (#55)
 
