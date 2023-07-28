@@ -1,5 +1,18 @@
 # otel-config-go changelog
 
+## v1.11.0 (2023-07-28)
+
+### Enahncements
+
+- feat: Add WithResourceOption for additional resource configuration (#48) | @martin308, @robbkidd, @vreynolds
+
+### Maintenance
+
+- docs: Update WithExporterProtocol in README.md (#54)
+- maint: update ubuntu and collector versions in CI (#53)
+- maint(deps): bump google.golang.org/grpc from 1.56.2 to 1.57.0 (#56)
+- maint(deps): bump go.opentelemetry.io/proto/otlp from 0.19.0 to 1.0.0 (#55)
+
 ## v1.10.0 (2023-05-31)
 
 ### 💥 Breaking Changes 💥
