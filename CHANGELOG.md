@@ -2,7 +2,7 @@
 
 ## v1.11.0 (2023-07-28)
 
-### Enahncements
+### Enhancements
 
 - feat: Add WithResourceOption for additional resource configuration (#48) | @martin308, @robbkidd, @vreynolds
 
