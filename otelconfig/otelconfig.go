@@ -331,7 +331,7 @@ type Config struct {
 	errorHandler                    otel.ErrorHandler
 }
 
-func newConfig(opts ...Option) *Config {
+func newConfig(opts ...Option) (*Config, error) {
 	c := &Config{
 		Headers:            map[string]string{},
 		TracesHeaders:      map[string]string{},
@@ -344,6 +344,8 @@ func newConfig(opts ...Option) *Config {
 	envError := envconfig.Process(context.Background(), c)
 	if envError != nil {
 		c.Logger.Fatalf("environment error: %v", envError)
+		// if our logger implementation doesn't os.Exit, we want to return here
+		return nil, fmt.Errorf("environment error: %w", envError)
 	}
 	// if exporter endpoint is not set using an env var, use the configured default
 	if c.ExporterEndpoint == "" {
@@ -366,8 +368,9 @@ func newConfig(opts ...Option) *Config {
 		l.logLevel = c.LogLevel
 	}
 
-	c.Resource = newResource(c)
-	return c
+	var err error
+	c.Resource, err = newResource(c)
+	return c, err
 }
 
 // OtelConfig is the object we're here for; it implements the initialization of Open Telemetry.
@@ -376,7 +379,7 @@ type OtelConfig struct {
 	shutdownFuncs []func() error
 }
 
-func newResource(c *Config) *resource.Resource {
+func newResource(c *Config) (*resource.Resource, error) {
 	r := resource.Environment()
 
 	hostnameSet := false
@@ -427,19 +430,14 @@ func newResource(c *Config) *resource.Resource {
 
 	options := append(baseOptions, c.ResourceOptions...)
 
-	r, err := resource.New(
+	// Note: There are new detectors we may wish to take advantage
+	// of, now available in the default SDK (e.g., WithProcess(),
+	// WithOSType(), ...).
+	return resource.New(
 		context.Background(),
 		options...,
 	)
 
-	if err != nil {
-		c.Logger.Debugf("error applying resource options: %s", err)
-	}
-
-	// Note: There are new detectors we may wish to take advantage
-	// of, now available in the default SDK (e.g., WithProcess(),
-	// WithOSType(), ...).
-	return r
 }
 
 type setupFunc func(*Config) (func() error, error)
@@ -616,7 +614,10 @@ func setupMetrics(c *Config) (func() error, error) {
 // ConfigureOpenTelemetry is a function that be called with zero or more options.
 // Options can be the basic ones above, or provided by individual vendors.
 func ConfigureOpenTelemetry(opts ...Option) (func(), error) {
-	c := newConfig(opts...)
+	c, err := newConfig(opts...)
+	if err != nil {
+		return nil, err
+	}
 
 	if c.LogLevel == "debug" {
 		c.Logger.Debugf("debug logging enabled")
