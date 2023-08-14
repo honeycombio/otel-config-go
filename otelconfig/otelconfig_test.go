@@ -980,7 +980,7 @@ func TestResourceDetectorsDontError(t *testing.T) {
 	unsetEnvironment()
 }
 
-func TestAwsResourceDetectorsDontError(t *testing.T) {
+func TestContribResourceDetectorsDontError(t *testing.T) {
 	logger := &testLogger{}
 	stopper := dummyGRPCListener()
 	defer stopper()
