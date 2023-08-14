@@ -982,6 +982,20 @@ func TestSemanticConventionVersionMatchesUpstream(t *testing.T) {
 	assert.Equal(t, ourSchemaURL, defaultResource.SchemaURL())
 }
 
+func TestResourceDetectorsDontError(t *testing.T) {
+  logger := &testLogger{}
+  stopper := dummyGRPCListener()
+  defer stopper()
+
+  shutdown, err := ConfigureOpenTelemetry(
+    WithLogger(logger),
+    WithResourceOption(resource.WithHost()),
+  )
+  assert.NoError(t, err)
+  defer shutdown()
+  unsetEnvironment()
+}
+
 type testSampler struct {
 	decsision  trace.SamplingDecision
 	attributes []attribute.KeyValue
