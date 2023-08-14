@@ -406,6 +406,9 @@ func TestConfigurationOverrides(t *testing.T) {
 		WithTracesExporterInsecure(false),
 		WithMetricsExporterEndpoint("override-metrics-url"),
 		WithMetricsExporterInsecure(false),
+		WithHeaders(map[string]string{"config-headers": "present"}),
+		WithTracesHeaders(map[string]string{"config-traces": "present"}),
+		WithMetricsHeaders(map[string]string{"config-metrics": "present"}),
 		WithLogLevel("info"),
 		WithLogger(logger),
 		WithErrorHandler(handler),
@@ -443,9 +446,9 @@ func TestConfigurationOverrides(t *testing.T) {
 		MetricsExporterEndpointInsecure: false,
 		MetricsReportingPeriod:          "30s",
 		LogLevel:                        "info",
-		Headers:                         map[string]string{},
-		TracesHeaders:                   map[string]string{},
-		MetricsHeaders:                  map[string]string{},
+		Headers:                         map[string]string{"config-headers": "present"},
+		TracesHeaders:                   map[string]string{"config-traces": "present"},
+		MetricsHeaders:                  map[string]string{"config-metrics": "present"},
 		ResourceAttributes:              map[string]string{},
 		ResourceAttributesFromEnv:       "service.name=test-service-name-b,resource.clobber=ENV_WON",
 		Propagators:                     []string{"b3"},
@@ -464,8 +467,14 @@ func TestConfigurationOverrides(t *testing.T) {
 			resource.WithDetectors(&testDetector{}),
 		},
 	}
+	// Generic and signal-specific headers should merge
+	expectedTraceHeaders := map[string]string{"config-headers": "present", "config-traces": "present"}
+	expectedMetricsHeaders := map[string]string{"config-headers": "present", "config-metrics": "present"}
+
 	assert.NoError(t, err)
 	assert.Equal(t, expectedConfig, testConfig)
+	assert.Equal(t, expectedTraceHeaders, testConfig.getTracesHeaders())
+	assert.Equal(t, expectedMetricsHeaders, testConfig.getMetricsHeaders())
 	unsetEnvironment()
 }
 
@@ -920,33 +929,6 @@ func TestCanUseCustomSampler(t *testing.T) {
 	attr := attrs[0]
 	assert.Equal(t, string(expectedSamplerProvidedAttribute.Key), string(attr.Key))
 	assert.Equal(t, expectedSamplerProvidedAttribute.Value.AsString(), attr.Value.GetStringValue())
-}
-
-func TestGenericAndSignalHeadersAreCombined(t *testing.T) {
-	ValidateConfig = func(c *Config) error {
-		assert.Equal(t, map[string]string{
-			"lnchr-headers": "true",
-			"lnchr-traces":  "true",
-		}, c.getTracesHeaders())
-		assert.Equal(t, map[string]string{
-			"lnchr-headers": "true",
-			"lnchr-metrics": "true",
-		}, c.getMetricsHeaders())
-		return nil
-	}
-
-	_, err := ConfigureOpenTelemetry(
-		WithHeaders(map[string]string{
-			"lnchr-headers": "true",
-		}),
-		WithTracesHeaders(map[string]string{
-			"lnchr-traces": "true",
-		}),
-		WithMetricsHeaders(map[string]string{
-			"lnchr-metrics": "true",
-		}),
-	)
-	assert.NoError(t, err)
 }
 
 func TestCanSetDefaultExporterEndpoint(t *testing.T) {
