@@ -976,6 +976,12 @@ func TestCustomDefaultExporterEndpointDoesNotReplaceOption(t *testing.T) {
 	unsetEnvironment()
 }
 
+func TestSemanticConventionVersionMatchesUpstream(t *testing.T) {
+	defaultResource := resource.Default()
+	ourSchemaURL := semconv.SchemaURL
+	assert.Equal(t, ourSchemaURL, defaultResource.SchemaURL())
+}
+
 type testSampler struct {
 	decsision  trace.SamplingDecision
 	attributes []attribute.KeyValue
