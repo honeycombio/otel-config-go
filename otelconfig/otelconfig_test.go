@@ -108,6 +108,7 @@ func dummyGRPCListenerWithTraceServer(traceServer collectortrace.TraceServiceSer
 	// and get in the way of testing.
 	l, err := net.Listen("tcp", net.JoinHostPort("localhost", "4317"))
 	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		panic("oops - dummyGrpcListener failed to start up!")
 	}
 	go func() {
@@ -151,12 +152,13 @@ func (t *testErrorHandler) Handle(err error) {
 
 func testEndpointDisabled(t *testing.T, expected string, opts ...Option) {
 	logger := &testLogger{}
-	shutdown, _ := ConfigureOpenTelemetry(
+	shutdown, err := ConfigureOpenTelemetry(
 		append(opts,
 			WithLogger(logger),
 			WithServiceName("test-service"),
 		)...,
 	)
+	require.NoError(t, err)
 	defer shutdown()
 
 	logger.requireContains(t, expected)
@@ -190,11 +192,12 @@ func TestValidConfig(t *testing.T) {
 	stopper := dummyGRPCListener()
 	defer stopper()
 
-	shutdown, _ := ConfigureOpenTelemetry(
+	shutdown, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithServiceName("test-service"),
 		withTestExporters(),
 	)
+	require.NoError(t, err)
 	defer shutdown()
 
 	if len(logger.output) > 0 {
@@ -206,12 +209,12 @@ func TestInvalidEnvironment(t *testing.T) {
 	setenv("OTEL_EXPORTER_OTLP_METRICS_INSECURE", "bleargh")
 
 	logger := &testLogger{}
-	shutdown, _ := ConfigureOpenTelemetry(
+
+	_, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithServiceName("test-service"),
 	)
-	defer shutdown()
-
+	require.ErrorContains(t, err, "environment error")
 	logger.requireContains(t, "environment error")
 	unsetEnvironment()
 }
@@ -273,7 +276,7 @@ func TestDebugEnabled(t *testing.T) {
 func TestDefaultConfig(t *testing.T) {
 	logger := &testLogger{}
 	handler := &testErrorHandler{}
-	config := newConfig(
+	config, err := newConfig(
 		WithLogger(logger),
 		WithErrorHandler(handler),
 	)
@@ -310,24 +313,24 @@ func TestDefaultConfig(t *testing.T) {
 		errorHandler:                    handler,
 		Sampler:                         trace.AlwaysSample(),
 	}
+	assert.NoError(t, err)
 	assert.Equal(t, expected, config)
 }
 
 func TestDefaultConfigMarshal(t *testing.T) {
 	logger := &testLogger{}
 	handler := &testErrorHandler{}
-	config := newConfig(
+	config, err := newConfig(
 		WithLogger(logger),
 		WithErrorHandler(handler),
 		WithShutdown(func(c *Config) error {
 			return nil
 		}),
 	)
-
-	j, err := json.Marshal(config)
-
 	assert.NoError(t, err)
 
+	j, err := json.Marshal(config)
+	assert.NoError(t, err)
 	assert.NotEmpty(t, j)
 }
 
@@ -335,7 +338,7 @@ func TestEnvironmentVariables(t *testing.T) {
 	setEnvironment()
 	logger := &testLogger{}
 	handler := &testErrorHandler{}
-	testConfig := newConfig(
+	testConfig, err := newConfig(
 		WithLogger(logger),
 		WithErrorHandler(handler),
 	)
@@ -376,6 +379,7 @@ func TestEnvironmentVariables(t *testing.T) {
 		errorHandler:                    handler,
 		Sampler:                         trace.AlwaysSample(),
 	}
+	assert.NoError(t, err)
 	assert.Equal(t, expectedConfig, testConfig)
 	unsetEnvironment()
 }
@@ -393,7 +397,7 @@ func TestConfigurationOverrides(t *testing.T) {
 	setEnvironment()
 	logger := &testLogger{}
 	handler := &testErrorHandler{}
-	testConfig := newConfig(
+	testConfig, err := newConfig(
 		WithServiceName("override-service-name"),
 		WithServiceVersion("override-service-version"),
 		WithExporterEndpoint("https://override-generic-url"),
@@ -460,6 +464,7 @@ func TestConfigurationOverrides(t *testing.T) {
 			resource.WithDetectors(&testDetector{}),
 		},
 	}
+	assert.NoError(t, err)
 	assert.Equal(t, expectedConfig, testConfig)
 	unsetEnvironment()
 }
@@ -577,7 +582,7 @@ func TestConfigureResourcesAttributes(t *testing.T) {
 		ServiceName:    "test-service",
 		ServiceVersion: "test-version",
 	}
-	resource := newResource(&config)
+	resource, err := newResource(&config)
 	expected := []attribute.KeyValue{
 		attribute.String("host.name", host()),
 		attribute.String("label1", "value1"),
@@ -588,6 +593,7 @@ func TestConfigureResourcesAttributes(t *testing.T) {
 		attribute.String("telemetry.sdk.name", "otelconfig"),
 		attribute.String("telemetry.sdk.version", version),
 	}
+	assert.NoError(t, err)
 	assert.Equal(t, expected, resource.Attributes())
 
 	setenv("OTEL_RESOURCE_ATTRIBUTES", "telemetry.sdk.language=test-language")
@@ -595,7 +601,7 @@ func TestConfigureResourcesAttributes(t *testing.T) {
 		ServiceName:    "test-service",
 		ServiceVersion: "test-version",
 	}
-	resource = newResource(&config)
+	resource, err = newResource(&config)
 	expected = []attribute.KeyValue{
 		attribute.String("host.name", host()),
 		attribute.String("service.name", "test-service"),
@@ -604,6 +610,7 @@ func TestConfigureResourcesAttributes(t *testing.T) {
 		attribute.String("telemetry.sdk.name", "otelconfig"),
 		attribute.String("telemetry.sdk.version", version),
 	}
+	assert.NoError(t, err)
 	assert.Equal(t, expected, resource.Attributes())
 
 	setenv("OTEL_RESOURCE_ATTRIBUTES", "service.name=test-service-b,host.name=host123")
@@ -611,7 +618,7 @@ func TestConfigureResourcesAttributes(t *testing.T) {
 		ServiceName:    "test-service-b",
 		ServiceVersion: "test-version",
 	}
-	resource = newResource(&config)
+	resource, err = newResource(&config)
 	expected = []attribute.KeyValue{
 		attribute.String("host.name", "host123"),
 		attribute.String("service.name", "test-service-b"),
@@ -620,6 +627,7 @@ func TestConfigureResourcesAttributes(t *testing.T) {
 		attribute.String("telemetry.sdk.name", "otelconfig"),
 		attribute.String("telemetry.sdk.version", version),
 	}
+	assert.NoError(t, err)
 	assert.Equal(t, expected, resource.Attributes())
 }
 
@@ -698,7 +706,7 @@ func TestConfigWithResourceAttributesError(t *testing.T) {
 		return "", errors.New("faulty resource detector")
 	})
 
-	shutdown, _ := ConfigureOpenTelemetry(
+	_, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithResourceAttributes(map[string]string{
 			"attr1": "val1",
@@ -721,14 +729,30 @@ func TestConfigWithResourceAttributesError(t *testing.T) {
 		}),
 		withTestExporters(),
 	)
-	defer shutdown()
+	assert.ErrorContains(t, err, "faulty resource detector")
+}
+
+func TestConfigWithUnmergableResources(t *testing.T) {
+	stopper := dummyGRPCListener()
+	defer stopper()
+	const otherSchemaURL = "https://test/other-schema-url"
+	detect := resource.StringDetector(otherSchemaURL, "attr.key", func() (string, error) {
+		return "attr.value", nil
+	})
+
+	_, err := ConfigureOpenTelemetry(
+		WithServiceName("test-service"),
+		WithResourceOption(resource.WithDetectors(detect)),
+		withTestExporters(),
+	)
+	assert.ErrorContains(t, err, "conflicting Schema URL")
 }
 
 func TestThatEndpointsFallBackCorrectly(t *testing.T) {
 	unsetEnvironment()
 	testCases := []struct {
 		name            string
-		config          *Config
+		configOpts      []Option
 		tracesEndpoint  string
 		tracesInsecure  bool
 		metricsEndpoint string
@@ -736,7 +760,7 @@ func TestThatEndpointsFallBackCorrectly(t *testing.T) {
 	}{
 		{
 			name:            "defaults",
-			config:          newConfig(),
+			configOpts:      []Option{},
 			tracesEndpoint:  "localhost:4317",
 			tracesInsecure:  false,
 			metricsEndpoint: "localhost:4317",
@@ -744,10 +768,10 @@ func TestThatEndpointsFallBackCorrectly(t *testing.T) {
 		},
 		{
 			name: "set generic endpoint / insecure",
-			config: newConfig(
+			configOpts: []Option{
 				WithExporterEndpoint("generic-url"),
 				WithExporterInsecure(true),
-			),
+			},
 			tracesEndpoint:  "generic-url:4317",
 			tracesInsecure:  true,
 			metricsEndpoint: "generic-url:4317",
@@ -755,14 +779,13 @@ func TestThatEndpointsFallBackCorrectly(t *testing.T) {
 		},
 		{
 			name: "set specific endpoint / insecure",
-			config: newConfig(
-				WithExporterEndpoint("generic-url"),
+			configOpts: []Option{WithExporterEndpoint("generic-url"),
 				WithExporterInsecure(false),
 				WithTracesExporterEndpoint("traces-url"),
 				WithTracesExporterInsecure(true),
 				WithMetricsExporterEndpoint("metrics-url:1234"),
 				WithMetricsExporterInsecure(true),
-			),
+			},
 			tracesEndpoint:  "traces-url:4317",
 			tracesInsecure:  true,
 			metricsEndpoint: "metrics-url:1234",
@@ -770,11 +793,10 @@ func TestThatEndpointsFallBackCorrectly(t *testing.T) {
 		},
 		{
 			name: "set traces to protobuf, metrics default",
-			config: newConfig(
-				WithTracesExporterProtocol("http/protobuf"),
+			configOpts: []Option{WithTracesExporterProtocol("http/protobuf"),
 				WithTracesExporterEndpoint("traces-url"),
 				WithTracesExporterInsecure(true),
-			),
+			},
 			tracesEndpoint:  "traces-url:4318",
 			tracesInsecure:  true,
 			metricsEndpoint: "localhost:4317",
@@ -782,34 +804,31 @@ func TestThatEndpointsFallBackCorrectly(t *testing.T) {
 		},
 		{
 			name: "set grpc endpoint with https scheme and no port, add port as helper",
-			config: newConfig(
-				WithExporterEndpoint("https://generic-url"),
+			configOpts: []Option{WithExporterEndpoint("https://generic-url"),
 				WithExporterProtocol("grpc"),
-			),
+			},
 			tracesEndpoint:  "generic-url:443",
 			metricsEndpoint: "generic-url:443",
 		},
 		{
 			name: "set grpc endpoint with https scheme and port, no update to port",
-			config: newConfig(
-				WithExporterEndpoint("https://generic-url:1234"),
+			configOpts: []Option{WithExporterEndpoint("https://generic-url:1234"),
 				WithExporterProtocol("grpc"),
-			),
+			},
 			tracesEndpoint:  "generic-url:1234",
 			metricsEndpoint: "generic-url:1234",
 		},
 		{
 			name: "set grpc endpoint with http scheme and port, no update to port",
-			config: newConfig(
-				WithExporterEndpoint("http://generic-url:1234"),
+			configOpts: []Option{WithExporterEndpoint("http://generic-url:1234"),
 				WithExporterProtocol("grpc"),
-			),
+			},
 			tracesEndpoint:  "generic-url:1234",
 			metricsEndpoint: "generic-url:1234",
 		},
 		{
 			name:            "defaults",
-			config:          newConfig(),
+			configOpts:      []Option{},
 			tracesEndpoint:  "localhost:4317",
 			tracesInsecure:  false,
 			metricsEndpoint: "localhost:4317",
@@ -819,11 +838,13 @@ func TestThatEndpointsFallBackCorrectly(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			tracesEndpoint, tracesInsecure := tc.config.getTracesEndpoint()
+			cfg, err := newConfig(tc.configOpts...)
+			assert.NoError(t, err)
+			tracesEndpoint, tracesInsecure := cfg.getTracesEndpoint()
 			assert.Equal(t, tc.tracesEndpoint, tracesEndpoint)
 			assert.Equal(t, tc.tracesInsecure, tracesInsecure)
 
-			metricsEndpoint, metricsInsecure := tc.config.getMetricsEndpoint()
+			metricsEndpoint, metricsInsecure := cfg.getMetricsEndpoint()
 			assert.Equal(t, tc.metricsEndpoint, metricsEndpoint)
 			assert.Equal(t, tc.metricsInsecure, metricsInsecure)
 		})
@@ -837,12 +858,13 @@ func TestHttpProtoDefaultsToCorrectHostAndPort(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	shutdown, _ := ConfigureOpenTelemetry(
+	shutdown, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithExporterEndpoint(ts.URL),
 		WithExporterInsecure(true),
 		WithExporterProtocol("http/protobuf"),
 	)
+	require.NoError(t, err)
 
 	ctx := context.Background()
 	tracer := otel.GetTracerProvider().Tracer("otelconfig-tests")
@@ -857,10 +879,11 @@ func TestHttpProtoDefaultsToCorrectHostAndPort(t *testing.T) {
 
 func TestCanConfigureCustomSampler(t *testing.T) {
 	sampler := &testSampler{}
-	config := newConfig(
+	config, err := newConfig(
 		WithSampler(sampler),
 	)
 
+	assert.NoError(t, err)
 	assert.Same(t, config.Sampler, sampler)
 }
 
@@ -877,10 +900,11 @@ func TestCanUseCustomSampler(t *testing.T) {
 	stopper := dummyGRPCListenerWithTraceServer(traceServer)
 	defer stopper()
 
-	shutdown, _ := ConfigureOpenTelemetry(
+	shutdown, err := ConfigureOpenTelemetry(
 		WithSampler(sampler),
 		withTestExporters(),
 	)
+	require.NoError(t, err)
 
 	tracer := otel.GetTracerProvider().Tracer("otelconfig-tests")
 	_, span := tracer.Start(context.Background(), "test-span")
@@ -922,19 +946,21 @@ func TestGenericAndSignalHeadersAreCombined(t *testing.T) {
 			"lnchr-metrics": "true",
 		}),
 	)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestCanSetDefaultExporterEndpoint(t *testing.T) {
 	DefaultExporterEndpoint = "http://custom.endpoint"
-	config := newConfig()
+	config, err := newConfig()
+	assert.NoError(t, err)
 	assert.Equal(t, "http://custom.endpoint", config.ExporterEndpoint)
 }
 
 func TestCustomDefaultExporterEndpointDoesNotReplaceEnvVar(t *testing.T) {
 	setEnvironment()
 	DefaultExporterEndpoint = "http://custom.endpoint"
-	config := newConfig()
+	config, err := newConfig()
+	assert.NoError(t, err)
 	assert.Equal(t, "http://generic-url", config.ExporterEndpoint)
 	unsetEnvironment()
 }
@@ -942,9 +968,10 @@ func TestCustomDefaultExporterEndpointDoesNotReplaceEnvVar(t *testing.T) {
 func TestCustomDefaultExporterEndpointDoesNotReplaceOption(t *testing.T) {
 	setEnvironment()
 	DefaultExporterEndpoint = "http://http://custom.endpoint"
-	config := newConfig(
+	config, err := newConfig(
 		WithExporterEndpoint("http://other.endpoint"),
 	)
+	assert.NoError(t, err)
 	assert.Equal(t, "http://other.endpoint", config.ExporterEndpoint)
 	unsetEnvironment()
 }
