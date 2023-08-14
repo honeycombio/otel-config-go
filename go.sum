@@ -58,6 +58,8 @@ github.com/tklauser/numcpus v0.6.0/go.mod h1:FEZLMke0lhOUG6w2JadTzp0a+Nl8PF/GFkQ
 github.com/yusufpapurcu/wmi v1.2.2/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 github.com/yusufpapurcu/wmi v1.2.3 h1:E1ctvB7uKFMOJw3fdOW32DwGE9I7t++CRUEMKvFoFiw=
 github.com/yusufpapurcu/wmi v1.2.3/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
+go.opentelemetry.io/contrib/detectors/aws/lambda v0.42.0 h1:xb6nqUltqyi7dVDSQ8QsxufefOxosru1XoJzsZt4gkU=
+go.opentelemetry.io/contrib/detectors/aws/lambda v0.42.0/go.mod h1:rzv6fEMvxWU2x0bgykCIhb74njjctPuyVLd9Tv/1FT8=
 go.opentelemetry.io/contrib/instrumentation/host v0.42.0 h1:/GMlvboQJd4LWxNX/oGYLv06J5a/M/flauLruM/3U2g=
 go.opentelemetry.io/contrib/instrumentation/host v0.42.0/go.mod h1:w6v1mVemRjTTdfejACjf+LgVA6zKtHOWmdAIf3icx7A=
 go.opentelemetry.io/contrib/instrumentation/runtime v0.42.0 h1:EbmAUG9hEAMXyfWEasIt2kmh/WmXUznUksChApTgBGc=

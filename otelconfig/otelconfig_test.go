@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
+	"go.opentelemetry.io/contrib/detectors/aws/lambda"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
@@ -972,9 +973,27 @@ func TestResourceDetectorsDontError(t *testing.T) {
 	shutdown, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithResourceOption(resource.WithHost()),
+		withTestExporters(),
 	)
 	assert.NoError(t, err)
 	defer shutdown()
+	unsetEnvironment()
+}
+
+func TestAwsResourceDetectorsDontError(t *testing.T) {
+	logger := &testLogger{}
+	stopper := dummyGRPCListener()
+	defer stopper()
+
+	setenv("AWS_LAMBDA_FUNCTION_NAME", "lambdatest")
+	lambdaDetector := lambda.NewResourceDetector()
+
+	_, err := ConfigureOpenTelemetry(
+		WithLogger(logger),
+		WithResourceOption(resource.WithDetectors(lambdaDetector)),
+		withTestExporters(),
+	)
+	assert.NoError(t, err, "cannot merge resource due to conflicting Schema URL")
 	unsetEnvironment()
 }
 
