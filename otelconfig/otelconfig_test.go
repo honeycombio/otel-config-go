@@ -965,17 +965,17 @@ func TestSemanticConventionVersionMatchesUpstream(t *testing.T) {
 }
 
 func TestResourceDetectorsDontError(t *testing.T) {
-  logger := &testLogger{}
-  stopper := dummyGRPCListener()
-  defer stopper()
+	logger := &testLogger{}
+	stopper := dummyGRPCListener()
+	defer stopper()
 
-  shutdown, err := ConfigureOpenTelemetry(
-    WithLogger(logger),
-    WithResourceOption(resource.WithHost()),
-  )
-  assert.NoError(t, err)
-  defer shutdown()
-  unsetEnvironment()
+	shutdown, err := ConfigureOpenTelemetry(
+		WithLogger(logger),
+		WithResourceOption(resource.WithHost()),
+	)
+	assert.NoError(t, err)
+	defer shutdown()
+	unsetEnvironment()
 }
 
 type testSampler struct {
