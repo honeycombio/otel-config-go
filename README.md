@@ -2,6 +2,11 @@
 
 This project is a configuration layer that chooses default values for configuration options that many OpenTelemetry users would ultimately configure manually, allowing for minimal code to quickly instrument with OpenTelemetry.
 
+Latest release built with:
+
+- OpenTelemetry Go [v1.16.0/v0.39.0](https://github.com/open-telemetry/opentelemetry-go/releases/tag/v1.16.0)
+- OpenTelemetry Semantic Conventions [v1.17.0](https://github.com/open-telemetry/opentelemetry-go/tree/main/semconv/v1.17.0)
+
 ## Getting started
 
 ```bash
