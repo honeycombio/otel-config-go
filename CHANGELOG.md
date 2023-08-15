@@ -2,6 +2,11 @@
 
 ## v1.12.0 (2023-08-15)
 
+### 💥 Breaking Changes 💥
+
+In previous versions, incompatible resource configurations would fail silently.
+Now an error is returned so it is clear when configuration is incompatible.
+
 ### Enhancements
 
 - feat: return errors from resource.New (#59) | @dstrelau
