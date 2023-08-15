@@ -18,6 +18,7 @@ changelog:
     - title: 🛠 Maintenance
       labels:
         - "type: maintenance"
+        - "type: dependencies"
     - title: 🤷 Other Changes
       labels:
         - "*"
