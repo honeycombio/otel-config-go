@@ -1,5 +1,20 @@
 # otel-config-go changelog
 
+## v1.12.0 (2023-08-15)
+
+### 💥 Breaking Changes 💥
+
+In previous versions, incompatible resource configurations would fail silently.
+Now an error is returned so it is clear when configuration is incompatible.
+
+### Enhancements
+
+- feat: return errors from resource.New (#59) | @dstrelau
+
+### Maintenance
+
+- maint: Match semantic convention version to SDK semantic conventions (#60) | @JamieDanielson
+
 ## v1.11.0 (2023-07-28)
 
 ### Enhancements
