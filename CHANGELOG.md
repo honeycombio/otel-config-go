@@ -1,5 +1,12 @@
 # otel-config-go changelog
 
+## v1.12.1 (2023-09-21)
+
+### Maintenance
+
+- maint: upgrade otel packages to latest (#68) | @JamieDanielson
+- maint: add release.yml for auto-generated release notes (#62) | @JamieDanielson
+
 ## v1.12.0 (2023-08-15)
 
 ### 💥 Breaking Changes 💥
