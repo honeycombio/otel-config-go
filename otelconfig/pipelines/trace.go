@@ -30,26 +30,33 @@ func NewTracePipeline(c PipelineConfig) (func() error, error) {
 		opts = append(opts, trace.WithSpanProcessor(sp))
 	}
 
-	// make sure the exporter is added last
-	spanExporter, err := newTraceExporter(c.Protocol, c.Endpoint, c.Insecure, c.Headers)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create span exporter: %v", err)
+	shutdown := emptyShutdown
+	if !c.DisableDefaultSpanProcessor {
+		// make sure the exporter is added last
+		spanExporter, err := newTraceExporter(c.Protocol, c.Endpoint, c.Insecure, c.Headers)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create span exporter: %v", err)
+		}
+
+		bsp := trace.NewBatchSpanProcessor(spanExporter)
+		opts = append(opts, trace.WithSpanProcessor(bsp))
+
+		shutdown = func() error {
+			_ = bsp.Shutdown(context.Background())
+			return spanExporter.Shutdown(context.Background())
+		}
+	} else if len(c.SpanProcessors) == 0 {
+		return nil, fmt.Errorf("must provide at least one span processor if the default span processor is disabled")
 	}
 
-	bsp := trace.NewBatchSpanProcessor(spanExporter)
-	opts = append(opts, trace.WithSpanProcessor(bsp))
-
 	tp := trace.NewTracerProvider(opts...)
-	if err = configurePropagators(c); err != nil {
+	if err := configurePropagators(c); err != nil {
 		return nil, err
 	}
 
 	otel.SetTracerProvider(tp)
 
-	return func() error {
-		_ = bsp.Shutdown(context.Background())
-		return spanExporter.Shutdown(context.Background())
-	}, nil
+	return shutdown, nil
 }
 
 //revive:disable:flag-parameter bools are fine for an internal function
@@ -120,5 +127,9 @@ func configurePropagators(c PipelineConfig) error {
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		props...,
 	))
+	return nil
+}
+
+func emptyShutdown() error {
 	return nil
 }

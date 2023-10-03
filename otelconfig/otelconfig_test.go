@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
@@ -422,6 +424,7 @@ func TestConfigurationOverrides(t *testing.T) {
 			attribute.String("resource.clobber", "CODE_WON"),
 		)),
 		WithResourceOption(resource.WithDetectors(&testDetector{})),
+		WithDisableDefaultSpanProcessor(),
 	)
 
 	expectedConfiguredResource := resource.NewWithAttributes(
@@ -467,6 +470,7 @@ func TestConfigurationOverrides(t *testing.T) {
 			),
 			resource.WithDetectors(&testDetector{}),
 		},
+		DisableDefaultSpanProcessor: true,
 	}
 	// Generic and signal-specific headers should merge
 	expectedTraceHeaders := map[string]string{"config-headers": "present", "config-traces": "present"}
@@ -477,6 +481,34 @@ func TestConfigurationOverrides(t *testing.T) {
 	assert.Equal(t, expectedTraceHeaders, testConfig.getTracesHeaders())
 	assert.Equal(t, expectedMetricsHeaders, testConfig.getMetricsHeaders())
 	unsetEnvironment()
+}
+
+func TestDisableDefaultSpanProcessor(t *testing.T) {
+	logger := &testLogger{}
+
+	_, err := ConfigureOpenTelemetry(
+		WithLogger(logger),
+		WithDisableDefaultSpanProcessor(),
+	)
+	require.ErrorContains(t, err, "must provide at least one span processor")
+	unsetEnvironment()
+
+	// Using a custom span processor allows use of WithDisableDefaultSpanProcessor
+	exporter, err := otlptrace.New(
+		context.Background(),
+		otlptracehttp.NewClient(),
+	)
+	require.NoError(t, err)
+	sp := trace.NewBatchSpanProcessor(exporter)
+
+	shutdown, err := ConfigureOpenTelemetry(
+		WithLogger(logger),
+		WithDisableDefaultSpanProcessor(),
+		WithSpanProcessor(sp),
+	)
+	require.NoError(t, err)
+	require.NotPanics(t, shutdown)
+
 }
 
 type TestCarrier struct {

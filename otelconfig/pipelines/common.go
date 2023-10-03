@@ -17,15 +17,16 @@ const (
 
 // PipelineConfig contains config info for a Pipeline.
 type PipelineConfig struct {
-	Protocol        Protocol
-	Endpoint        string
-	Insecure        bool
-	Headers         map[string]string
-	Resource        *resource.Resource
-	ReportingPeriod string
-	Propagators     []string
-	SpanProcessors  []trace.SpanProcessor
-	Sampler         trace.Sampler
+	Protocol                    Protocol
+	Endpoint                    string
+	Insecure                    bool
+	Headers                     map[string]string
+	Resource                    *resource.Resource
+	ReportingPeriod             string
+	Propagators                 []string
+	SpanProcessors              []trace.SpanProcessor
+	Sampler                     trace.Sampler
+	DisableDefaultSpanProcessor bool
 }
 
 // PipelineSetupFunc defines the interface for a Pipeline Setup function.

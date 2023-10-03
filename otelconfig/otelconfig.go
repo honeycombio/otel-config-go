@@ -206,6 +206,14 @@ func WithSpanProcessor(sp ...trace.SpanProcessor) Option {
 	}
 }
 
+// WithDisableDefaultSpanProcessor will not create an underlying default SpanProcessor.
+// In this case, one must be provided using WithSpanProcessor
+func WithDisableDefaultSpanProcessor() Option {
+	return func(c *Config) {
+		c.DisableDefaultSpanProcessor = true
+	}
+}
+
 // WithShutdown adds functions that will be called first when the shutdown function is called.
 // They are given a copy of the Config object (which has access to the Logger), and should
 // return an error only in extreme circumstances, as an error return here is immediately fatal.
@@ -328,6 +336,7 @@ type Config struct {
 	Resource                        *resource.Resource
 	Logger                          Logger                  `json:"-"`
 	ShutdownFunctions               []func(c *Config) error `json:"-"`
+	DisableDefaultSpanProcessor     bool
 	errorHandler                    otel.ErrorHandler
 }
 
@@ -583,14 +592,15 @@ func setupTracing(c *Config) (func() error, error) {
 	}
 
 	return pipelines.NewTracePipeline(pipelines.PipelineConfig{
-		Protocol:       pipelines.Protocol(c.TracesExporterProtocol),
-		Endpoint:       trimHttpScheme(endpoint, c.TracesExporterProtocol),
-		Insecure:       insecure,
-		Headers:        c.getTracesHeaders(),
-		Resource:       c.Resource,
-		Propagators:    c.Propagators,
-		SpanProcessors: c.SpanProcessors,
-		Sampler:        c.Sampler,
+		Protocol:                    pipelines.Protocol(c.TracesExporterProtocol),
+		Endpoint:                    trimHttpScheme(endpoint, c.TracesExporterProtocol),
+		Insecure:                    insecure,
+		Headers:                     c.getTracesHeaders(),
+		Resource:                    c.Resource,
+		Propagators:                 c.Propagators,
+		SpanProcessors:              c.SpanProcessors,
+		Sampler:                     c.Sampler,
+		DisableDefaultSpanProcessor: c.DisableDefaultSpanProcessor,
 	})
 }
 
