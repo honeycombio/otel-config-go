@@ -377,6 +377,7 @@ func newConfig(opts ...Option) (*Config, error) {
 type OtelConfig struct {
 	config        *Config
 	shutdownFuncs []func() error
+	flushFuncs    []func(context.Context) error
 }
 
 func newResource(c *Config) (*resource.Resource, error) {
@@ -440,7 +441,7 @@ func newResource(c *Config) (*resource.Resource, error) {
 
 }
 
-type setupFunc func(*Config) (func() error, error)
+type setupFunc func(*Config) (func() error, func(context.Context) error, error)
 
 // ensures that a port is set on the given host string, or adds the default port.
 func ensurePort(host string, defaultPort string) string {
@@ -575,11 +576,11 @@ func (c *Config) getMetricsHeaders() map[string]string {
 	return headers
 }
 
-func setupTracing(c *Config) (func() error, error) {
+func setupTracing(c *Config) (func() error, func(context.Context) error, error) {
 	endpoint, insecure := c.getTracesEndpoint()
 	if !c.TracesEnabled || endpoint == "" {
 		c.Logger.Debugf("tracing is disabled by configuration: no endpoint set")
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	return pipelines.NewTracePipeline(pipelines.PipelineConfig{
@@ -594,11 +595,11 @@ func setupTracing(c *Config) (func() error, error) {
 	})
 }
 
-func setupMetrics(c *Config) (func() error, error) {
+func setupMetrics(c *Config) (func() error, func(context.Context) error, error) {
 	endpoint, insecure := c.getMetricsEndpoint()
 	if !c.MetricsEnabled || endpoint == "" {
 		c.Logger.Debugf("metrics are disabled by configuration: no endpoint set")
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	return pipelines.NewMetricsPipeline(pipelines.PipelineConfig{
@@ -642,12 +643,15 @@ func ConfigureOpenTelemetry(opts ...Option) (func(), error) {
 	}
 
 	for _, setup := range []setupFunc{setupTracing, setupMetrics} {
-		shutdown, err := setup(c)
+		shutdown, flush, err := setup(c)
 		if err != nil {
 			return otelConfig.Shutdown, fmt.Errorf("setup error: %w", err)
 		}
 		if shutdown != nil {
 			otelConfig.shutdownFuncs = append(otelConfig.shutdownFuncs, shutdown)
+		}
+		if flush != nil {
+			otelConfig.flushFuncs = append(otelConfig.flushFuncs, flush)
 		}
 	}
 	return otelConfig.Shutdown, nil
@@ -669,4 +673,19 @@ func (ls OtelConfig) Shutdown() {
 			ls.config.Logger.Fatalf("failed to stop exporter: %v", err)
 		}
 	}
+}
+
+// ForchFlush calls flush on all configured trace and metric exporters.
+func (config OtelConfig) ForchFlush(ctx context.Context) error {
+	errs := []error{}
+	for _, flush := range config.flushFuncs {
+		err := flush(ctx)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("failed to flush exporters: %v", errs)
+	}
+	return nil
 }

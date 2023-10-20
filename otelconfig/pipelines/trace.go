@@ -21,7 +21,7 @@ import (
 
 // NewTracePipeline creates a new trace pipeline from a config.
 // It returns a shutdown function that should be called when terminating the pipeline.
-func NewTracePipeline(c PipelineConfig) (func() error, error) {
+func NewTracePipeline(c PipelineConfig) (func() error, func(context.Context) error, error) {
 	opts := []trace.TracerProviderOption{
 		trace.WithResource(c.Resource),
 		trace.WithSampler(c.Sampler),
@@ -33,7 +33,7 @@ func NewTracePipeline(c PipelineConfig) (func() error, error) {
 	// make sure the exporter is added last
 	spanExporter, err := newTraceExporter(c.Protocol, c.Endpoint, c.Insecure, c.Headers)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create span exporter: %v", err)
+		return nil, nil, fmt.Errorf("failed to create span exporter: %v", err)
 	}
 
 	bsp := trace.NewBatchSpanProcessor(spanExporter)
@@ -41,7 +41,7 @@ func NewTracePipeline(c PipelineConfig) (func() error, error) {
 
 	tp := trace.NewTracerProvider(opts...)
 	if err = configurePropagators(c); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	otel.SetTracerProvider(tp)
@@ -49,7 +49,7 @@ func NewTracePipeline(c PipelineConfig) (func() error, error) {
 	return func() error {
 		_ = bsp.Shutdown(context.Background())
 		return spanExporter.Shutdown(context.Background())
-	}, nil
+	}, bsp.ForceFlush, nil
 }
 
 //revive:disable:flag-parameter bools are fine for an internal function
