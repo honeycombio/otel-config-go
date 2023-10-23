@@ -23,7 +23,7 @@ Minimal setup - by default will send all telemetry via GRPC to `localhost:4317`
 import "github.com/honeycombio/otel-config-go/otelconfig"
 
 func main() {
-    otelShutdown, err := otelconfig.ConfigureOpenTelemetry()
+    otelShutdown, _, err := otelconfig.ConfigureOpenTelemetry()
     defer otelShutdown()
 }
 ```
@@ -34,7 +34,7 @@ You can set headers directly instead.
 import "github.com/honeycombio/otel-config-go/otelconfig"
 
 func main() {
-    otelShutdown, err := otelconfig.ConfigureOpenTelemetry(
+    otelShutdown, _, err := otelconfig.ConfigureOpenTelemetry(
         otelconfig.WithServiceName("service-name"),
         otelconfig.WithHeaders(map[string]string{
             "service-auth-key": "value",
