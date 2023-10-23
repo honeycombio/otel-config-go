@@ -614,10 +614,10 @@ func setupMetrics(c *Config) (func() error, func(context.Context) error, error) 
 
 // ConfigureOpenTelemetry is a function that be called with zero or more options.
 // Options can be the basic ones above, or provided by individual vendors.
-func ConfigureOpenTelemetry(opts ...Option) (func(), error) {
+func ConfigureOpenTelemetry(opts ...Option) (func(), func(context.Context) error, error) {
 	c, err := newConfig(opts...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if c.LogLevel == "debug" {
@@ -630,7 +630,7 @@ func ConfigureOpenTelemetry(opts ...Option) (func(), error) {
 	// Give a vendor a chance to validate the configuration
 	if ValidateConfig != nil {
 		if err := ValidateConfig(c); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
@@ -645,7 +645,7 @@ func ConfigureOpenTelemetry(opts ...Option) (func(), error) {
 	for _, setup := range []setupFunc{setupTracing, setupMetrics} {
 		shutdown, flush, err := setup(c)
 		if err != nil {
-			return otelConfig.Shutdown, fmt.Errorf("setup error: %w", err)
+			return otelConfig.Shutdown, otelConfig.ForchFlush, fmt.Errorf("setup error: %w", err)
 		}
 		if shutdown != nil {
 			otelConfig.shutdownFuncs = append(otelConfig.shutdownFuncs, shutdown)
@@ -654,7 +654,7 @@ func ConfigureOpenTelemetry(opts ...Option) (func(), error) {
 			otelConfig.flushFuncs = append(otelConfig.flushFuncs, flush)
 		}
 	}
-	return otelConfig.Shutdown, nil
+	return otelConfig.Shutdown, otelConfig.ForchFlush, nil
 }
 
 // Shutdown is the function called to shut down OpenTelemetry. It invokes any registered

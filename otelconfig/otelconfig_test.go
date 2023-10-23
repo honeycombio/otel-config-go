@@ -153,7 +153,7 @@ func (t *testErrorHandler) Handle(err error) {
 
 func testEndpointDisabled(t *testing.T, expected string, opts ...Option) {
 	logger := &testLogger{}
-	shutdown, err := ConfigureOpenTelemetry(
+	shutdown, _, err := ConfigureOpenTelemetry(
 		append(opts,
 			WithLogger(logger),
 			WithServiceName("test-service"),
@@ -193,7 +193,7 @@ func TestValidConfig(t *testing.T) {
 	stopper := dummyGRPCListener()
 	defer stopper()
 
-	shutdown, err := ConfigureOpenTelemetry(
+	shutdown, _, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithServiceName("test-service"),
 		withTestExporters(),
@@ -211,7 +211,7 @@ func TestInvalidEnvironment(t *testing.T) {
 
 	logger := &testLogger{}
 
-	_, err := ConfigureOpenTelemetry(
+	_, _, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithServiceName("test-service"),
 	)
@@ -224,7 +224,7 @@ func TestInvalidMetricsPushIntervalEnv(t *testing.T) {
 	setenv("OTEL_EXPORTER_OTLP_METRICS_PERIOD", "300million")
 
 	logger := &testLogger{}
-	shutdown, err := ConfigureOpenTelemetry(
+	shutdown, _, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithServiceName("test-service"),
 		withTestExporters(),
@@ -236,7 +236,7 @@ func TestInvalidMetricsPushIntervalEnv(t *testing.T) {
 
 func TestInvalidMetricsPushIntervalConfig(t *testing.T) {
 	logger := &testLogger{}
-	shutdown, err := ConfigureOpenTelemetry(
+	shutdown, _, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithServiceName("test-service"),
 		WithMetricsReportingPeriod(-time.Second),
@@ -253,7 +253,7 @@ func TestDebugEnabled(t *testing.T) {
 	stopper := dummyGRPCListener()
 	defer stopper()
 
-	shutdown, _ := ConfigureOpenTelemetry(
+	shutdown, _, _ := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithServiceName("test-service"),
 		withTestExporters(),
@@ -511,7 +511,7 @@ func TestConfigurePropagators1(t *testing.T) {
 
 	unsetEnvironment()
 	logger := &testLogger{}
-	shutdown, err := ConfigureOpenTelemetry(
+	shutdown, _, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithServiceName("test-service"),
 		withTestExporters(),
@@ -543,7 +543,7 @@ func TestConfigurePropagators2(t *testing.T) {
 
 	unsetEnvironment()
 	logger := &testLogger{}
-	shutdown, err := ConfigureOpenTelemetry(
+	shutdown, _, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithServiceName("test-service"),
 		WithPropagators([]string{"b3", "baggage", "tracecontext"}),
@@ -571,7 +571,7 @@ func TestConfigurePropagators3(t *testing.T) {
 
 	unsetEnvironment()
 	logger := &testLogger{}
-	shutdown, err := ConfigureOpenTelemetry(
+	shutdown, _, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithServiceName("test-service"),
 		WithPropagators([]string{"invalid"}),
@@ -647,7 +647,7 @@ func TestServiceNameViaResourceAttributes(t *testing.T) {
 
 	setenv("OTEL_RESOURCE_ATTRIBUTES", "service.name=test-service-b")
 	logger := &testLogger{}
-	shutdown, _ := ConfigureOpenTelemetry(
+	shutdown, _, _ := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		withTestExporters(),
 	)
@@ -662,7 +662,7 @@ func TestEmptyHostnameDefaultsToOsHostname(t *testing.T) {
 	defer stopper()
 
 	setenv("OTEL_RESOURCE_ATTRIBUTES", "host.name=")
-	shutdown, _ := ConfigureOpenTelemetry(
+	shutdown, _, _ := ConfigureOpenTelemetry(
 		WithServiceName("test-service"),
 		WithTracesExporterEndpoint("localhost:443"),
 		WithResourceAttributes(map[string]string{
@@ -685,7 +685,7 @@ func TestConfigWithResourceAttributes(t *testing.T) {
 	stopper := dummyGRPCListener()
 	defer stopper()
 
-	shutdown, _ := ConfigureOpenTelemetry(
+	shutdown, _, _ := ConfigureOpenTelemetry(
 		WithServiceName("test-service"),
 		WithResourceAttributes(map[string]string{
 			"attr1": "val1",
@@ -716,7 +716,7 @@ func TestConfigWithResourceAttributesError(t *testing.T) {
 		return "", errors.New("faulty resource detector")
 	})
 
-	_, err := ConfigureOpenTelemetry(
+	_, _, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithResourceAttributes(map[string]string{
 			"attr1": "val1",
@@ -750,7 +750,7 @@ func TestConfigWithUnmergableResources(t *testing.T) {
 		return "attr.value", nil
 	})
 
-	_, err := ConfigureOpenTelemetry(
+	_, _, err := ConfigureOpenTelemetry(
 		WithServiceName("test-service"),
 		WithResourceOption(resource.WithDetectors(detect)),
 		withTestExporters(),
@@ -868,7 +868,7 @@ func TestHttpProtoDefaultsToCorrectHostAndPort(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	shutdown, err := ConfigureOpenTelemetry(
+	shutdown, _, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithExporterEndpoint(ts.URL),
 		WithExporterInsecure(true),
@@ -910,7 +910,7 @@ func TestCanUseCustomSampler(t *testing.T) {
 	stopper := dummyGRPCListenerWithTraceServer(traceServer)
 	defer stopper()
 
-	shutdown, err := ConfigureOpenTelemetry(
+	shutdown, _, err := ConfigureOpenTelemetry(
 		WithSampler(sampler),
 		withTestExporters(),
 	)
@@ -970,7 +970,7 @@ func TestResourceDetectorsDontError(t *testing.T) {
 	stopper := dummyGRPCListener()
 	defer stopper()
 
-	shutdown, err := ConfigureOpenTelemetry(
+	shutdown, _, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithResourceOption(resource.WithHost()),
 		withTestExporters(),
@@ -988,7 +988,7 @@ func TestContribResourceDetectorsDontError(t *testing.T) {
 	setenv("AWS_LAMBDA_FUNCTION_NAME", "lambdatest")
 	lambdaDetector := lambda.NewResourceDetector()
 
-	_, err := ConfigureOpenTelemetry(
+	_, _, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
 		WithResourceOption(resource.WithDetectors(lambdaDetector)),
 		withTestExporters(),

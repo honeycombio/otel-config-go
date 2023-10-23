@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	otelShutdown, err := otelconfig.ConfigureOpenTelemetry(
+	otelShutdown, otelFlush, err := otelconfig.ConfigureOpenTelemetry(
 		otelconfig.WithResourceOption(
 			resource.WithAttributes(
 				attribute.String("resource.example_set_in_code", "CODE"),
@@ -30,4 +30,7 @@ func main() {
 	ctx := context.Background()
 	ctx, span := tracer.Start(ctx, "doing-things")
 	defer span.End()
+
+	// optionally, flush any remaining spans
+	otelFlush(context.Background())
 }
