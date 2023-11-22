@@ -1,5 +1,12 @@
 # otel-config-go changelog
 
+## v1.12.2 (2023-11-22)
+
+### Maintenance
+
+- Bump OTel dependencies (#84) | @MikeGoldsmith
+- Add dependency groups for otel and otel contrib packages (#79) | @MikeGoldsmith
+
 ## v1.12.1 (2023-09-21)
 
 ### Maintenance
