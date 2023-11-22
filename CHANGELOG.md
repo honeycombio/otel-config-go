@@ -6,6 +6,7 @@
 
 - Bump OTel dependencies (#84) | @MikeGoldsmith
 - Add dependency groups for otel and otel contrib packages (#79) | @MikeGoldsmith
+- Bump OTel core and contrib packages to latest (#90) | @MikeGoldsmith
 
 ## v1.12.1 (2023-09-21)
 

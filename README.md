@@ -4,8 +4,8 @@ This project is a configuration layer that chooses default values for configurat
 
 Latest release built with:
 
-- OpenTelemetry Go [v1.20.0/v0.43.0](https://github.com/open-telemetry/opentelemetry-go/releases/tag/v1.20.0)
-- OpenTelemetry Go Contrib [v1.21.0/v0.46.0](https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v1.21.0)
+- OpenTelemetry Go [v1.21.0/v0.44.0](https://github.com/open-telemetry/opentelemetry-go/releases/tag/v1.21.0)
+- OpenTelemetry Go Contrib [v1.21.1/v0.46.1](https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v1.21.1)
 - OpenTelemetry Semantic Conventions [v1.21.0](https://github.com/open-telemetry/opentelemetry-go/tree/main/semconv/v1.21.0)
 
 (Note: semantic conventions to be updated to match upstream in next release)
