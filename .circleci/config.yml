@@ -3,9 +3,9 @@ version: 2.1
 matrix_goversions: &matrix_goversions
   matrix:
     parameters:
-      goversion: ["19", "20"]
+      goversion: ["20", "21"]
 
-default_goversion: &default_goversion "20"
+default_goversion: &default_goversion "21"
 
 orbs:
   bats: circleci/bats@1.0.0
