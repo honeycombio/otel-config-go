@@ -8,8 +8,6 @@ Latest release built with:
 - OpenTelemetry Go Contrib [v1.21.1/v0.46.1](https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v1.21.1)
 - OpenTelemetry Semantic Conventions [v1.21.0](https://github.com/open-telemetry/opentelemetry-go/tree/main/semconv/v1.21.0)
 
-(Note: semantic conventions to be updated to match upstream in next release)
-
 Minimum Go Version: `1.20`
 
 See the OpenTelemetry SDK's [compatability matrix](https://github.com/open-telemetry/opentelemetry-go#compatibility) for more information.
