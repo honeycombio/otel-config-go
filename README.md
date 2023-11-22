@@ -10,6 +10,10 @@ Latest release built with:
 
 (Note: semantic conventions to be updated to match upstream in next release)
 
+Minimum Go Version: `1.20`
+
+See the OpenTelemetry SDK's [compatability matrix](https://github.com/open-telemetry/opentelemetry-go#compatibility) for more information.
+
 ## Getting started
 
 ```bash
