@@ -20,6 +20,4 @@ updates:
       otel-dependencies:
         patterns:
           - "go.opentelemetry.io/otel/*"
-      otel-contrib-dependencies:
-        patterns:
           - "go.opentelemetry.io/contrib/*"
