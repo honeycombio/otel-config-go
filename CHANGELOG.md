@@ -1,6 +1,6 @@
 # otel-config-go changelog
 
-## v1.12.2 (2023-11-22)
+## v1.13.0 (2023-11-22)
 
 ### Maintenance
 
