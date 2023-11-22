@@ -2,6 +2,13 @@
 
 ## v1.13.0 (2023-11-22)
 
+### 💥 Breaking Changes 💥
+
+The OpenTelemetry SDK moved the metrics packages into the main SDK packages with the latest release as it's now GA.
+If you used the metrics packages, you may need to update your import paths to reflect the new package.
+
+Additionally, the OpenTelenetry SDK's minimum Go version is now 1.20.
+
 ### Maintenance
 
 - Bump OTel dependencies (#84) | @MikeGoldsmith
