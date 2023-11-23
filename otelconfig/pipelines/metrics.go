@@ -59,11 +59,11 @@ func NewMetricsPipeline(c PipelineConfig) (func() error, error) {
 //revive:disable:flag-parameter bools are fine for an internal function
 func newMetricsExporter(protocol Protocol, endpoint string, insecure bool, headers map[string]string) (metric.Exporter, error) {
 	switch protocol {
-	case "grpc":
+	case ProtocolGRPC:
 		return newGRPCMetricsExporter(endpoint, insecure, headers)
-	case "http/protobuf":
+	case ProtocolHTTPProtobuf:
 		return newHTTPMetricsExporter(endpoint, insecure, headers)
-	case "http/json":
+	case ProtocolHTTPJSON:
 		return nil, errors.New("http/json is currently unsupported")
 	default:
 		return nil, errors.New("'" + string(protocol) + "' is not a supported protocol")
