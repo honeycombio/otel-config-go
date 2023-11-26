@@ -90,9 +90,6 @@ func newHTTPMetricsExporter(endpoint string, insecure bool, headers map[string]s
 	if insecure {
 		secureOption = otlpmetrichttp.WithInsecure()
 	}
-	if insecure {
-		secureOption = otlpmetrichttp.WithInsecure()
-	}
 	return otlpmetrichttp.New(
 		context.Background(),
 		secureOption,
