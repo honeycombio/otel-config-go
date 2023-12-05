@@ -1,5 +1,16 @@
 # otel-config-go changelog
 
+## v1.13.1 (2023-12-04)
+
+### Fixes
+
+- fix: remove duplicate secureOption assignment (#93) | @smoyer64
+- fix(pipelines): use protocol constants (#92) | @tranngoclam
+
+### Maintenance
+
+- maint: combine otel core and contrib in dependabot groups (#91) | @JamieDanielson
+
 ## v1.13.0 (2023-11-22)
 
 ### 💥 Breaking Changes 💥
