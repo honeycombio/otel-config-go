@@ -9,7 +9,7 @@
 
 ### Maintenance
 
-- maint: combine otel core and contrib in dependabot groups (#91) | @Dependabot
+- maint: combine otel core and contrib in dependabot groups (#91) | @JamieDanielson
 
 ## v1.13.0 (2023-11-22)
 
