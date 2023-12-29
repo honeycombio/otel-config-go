@@ -333,10 +333,10 @@ type Config struct {
 
 func newConfig(opts ...Option) (*Config, error) {
 	c := &Config{
-		ResourceAttributes: map[string]string{},
 		Headers:            map[string]string{},
 		TracesHeaders:      map[string]string{},
 		MetricsHeaders:     map[string]string{},
+		ResourceAttributes: map[string]string{},
 		Logger:             defLogger,
 		errorHandler:       &defaultHandler{logger: defLogger},
 		Sampler:            trace.AlwaysSample(),
