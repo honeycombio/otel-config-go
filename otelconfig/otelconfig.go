@@ -352,6 +352,18 @@ func newConfig(opts ...Option) (*Config, error) {
 		c.ExporterEndpoint = DefaultExporterEndpoint
 	}
 
+	if c.Headers == nil {
+		c.Headers = map[string]string{}
+	}
+
+	if c.TracesHeaders == nil {
+		c.TracesHeaders = map[string]string{}
+	}
+
+	if c.MetricsHeaders == nil {
+		c.MetricsHeaders = map[string]string{}
+	}
+
 	// If a vendor has specific options to add, add them to opts
 	vendorOpts := []Option{}
 	if SetVendorOptions != nil {
