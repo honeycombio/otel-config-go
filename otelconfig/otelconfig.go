@@ -318,9 +318,9 @@ type Config struct {
 	ExporterProtocol                Protocol          `env:"OTEL_EXPORTER_OTLP_PROTOCOL,default=grpc"`
 	TracesExporterProtocol          Protocol          `env:"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL"`
 	MetricsExporterProtocol         Protocol          `env:"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"`
-	Headers                         map[string]string `env:"OTEL_EXPORTER_OTLP_HEADERS,separator=="`
-	TracesHeaders                   map[string]string `env:"OTEL_EXPORTER_OTLP_TRACES_HEADERS,separator=="`
-	MetricsHeaders                  map[string]string `env:"OTEL_EXPORTER_OTLP_METRICS_HEADERS,separator=="`
+	Headers                         map[string]string `env:"OTEL_EXPORTER_OTLP_HEADERS,overwrite,separator=="`
+	TracesHeaders                   map[string]string `env:"OTEL_EXPORTER_OTLP_TRACES_HEADERS,overwrite,separator=="`
+	MetricsHeaders                  map[string]string `env:"OTEL_EXPORTER_OTLP_METRICS_HEADERS,overwrite,separator=="`
 	ResourceAttributes              map[string]string
 	SpanProcessors                  []trace.SpanProcessor
 	Sampler                         trace.Sampler
@@ -334,6 +334,9 @@ type Config struct {
 func newConfig(opts ...Option) (*Config, error) {
 	c := &Config{
 		ResourceAttributes: map[string]string{},
+		Headers:            map[string]string{},
+		TracesHeaders:      map[string]string{},
+		MetricsHeaders:     map[string]string{},
 		Logger:             defLogger,
 		errorHandler:       &defaultHandler{logger: defLogger},
 		Sampler:            trace.AlwaysSample(),
@@ -347,18 +350,6 @@ func newConfig(opts ...Option) (*Config, error) {
 	// if exporter endpoint is not set using an env var, use the configured default
 	if c.ExporterEndpoint == "" {
 		c.ExporterEndpoint = DefaultExporterEndpoint
-	}
-
-	if c.Headers == nil {
-		c.Headers = map[string]string{}
-	}
-
-	if c.TracesHeaders == nil {
-		c.TracesHeaders = map[string]string{}
-	}
-
-	if c.MetricsHeaders == nil {
-		c.MetricsHeaders = map[string]string{}
 	}
 
 	// If a vendor has specific options to add, add them to opts
