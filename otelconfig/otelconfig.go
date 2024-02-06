@@ -301,26 +301,26 @@ func (l *defaultHandler) Handle(err error) {
 // vary depending on the protocol chosen. If not overridden by explicit configuration, it will
 // be overridden with an appropriate default upon initialization.
 type Config struct {
-	ExporterEndpoint                string   `env:"OTEL_EXPORTER_OTLP_ENDPOINT"`
-	ExporterEndpointInsecure        bool     `env:"OTEL_EXPORTER_OTLP_INSECURE,default=false"`
-	TracesExporterEndpoint          string   `env:"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"`
-	TracesExporterEndpointInsecure  bool     `env:"OTEL_EXPORTER_OTLP_TRACES_INSECURE"`
-	TracesEnabled                   bool     `env:"OTEL_TRACES_ENABLED,default=true"`
-	ServiceName                     string   `env:"OTEL_SERVICE_NAME"`
-	ServiceVersion                  string   `env:"OTEL_SERVICE_VERSION,default=unknown"`
-	MetricsExporterEndpoint         string   `env:"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"`
-	MetricsExporterEndpointInsecure bool     `env:"OTEL_EXPORTER_OTLP_METRICS_INSECURE"`
-	MetricsEnabled                  bool     `env:"OTEL_METRICS_ENABLED,default=true"`
-	MetricsReportingPeriod          string   `env:"OTEL_EXPORTER_OTLP_METRICS_PERIOD,default=30s"`
-	LogLevel                        string   `env:"OTEL_LOG_LEVEL,default=info"`
-	Propagators                     []string `env:"OTEL_PROPAGATORS,default=tracecontext,baggage"`
-	ResourceAttributesFromEnv       string   `env:"OTEL_RESOURCE_ATTRIBUTES"`
-	ExporterProtocol                Protocol `env:"OTEL_EXPORTER_OTLP_PROTOCOL,default=grpc"`
-	TracesExporterProtocol          Protocol `env:"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL"`
-	MetricsExporterProtocol         Protocol `env:"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"`
-	Headers                         map[string]string
-	TracesHeaders                   map[string]string
-	MetricsHeaders                  map[string]string
+	ExporterEndpoint                string            `env:"OTEL_EXPORTER_OTLP_ENDPOINT"`
+	ExporterEndpointInsecure        bool              `env:"OTEL_EXPORTER_OTLP_INSECURE,default=false"`
+	TracesExporterEndpoint          string            `env:"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"`
+	TracesExporterEndpointInsecure  bool              `env:"OTEL_EXPORTER_OTLP_TRACES_INSECURE"`
+	TracesEnabled                   bool              `env:"OTEL_TRACES_ENABLED,default=true"`
+	ServiceName                     string            `env:"OTEL_SERVICE_NAME"`
+	ServiceVersion                  string            `env:"OTEL_SERVICE_VERSION,default=unknown"`
+	MetricsExporterEndpoint         string            `env:"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"`
+	MetricsExporterEndpointInsecure bool              `env:"OTEL_EXPORTER_OTLP_METRICS_INSECURE"`
+	MetricsEnabled                  bool              `env:"OTEL_METRICS_ENABLED,default=true"`
+	MetricsReportingPeriod          string            `env:"OTEL_EXPORTER_OTLP_METRICS_PERIOD,default=30s"`
+	LogLevel                        string            `env:"OTEL_LOG_LEVEL,default=info"`
+	Propagators                     []string          `env:"OTEL_PROPAGATORS,default=tracecontext,baggage"`
+	ResourceAttributesFromEnv       string            `env:"OTEL_RESOURCE_ATTRIBUTES"`
+	ExporterProtocol                Protocol          `env:"OTEL_EXPORTER_OTLP_PROTOCOL,default=grpc"`
+	TracesExporterProtocol          Protocol          `env:"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL"`
+	MetricsExporterProtocol         Protocol          `env:"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"`
+	Headers                         map[string]string `env:"OTEL_EXPORTER_OTLP_HEADERS,overwrite,separator=="`
+	TracesHeaders                   map[string]string `env:"OTEL_EXPORTER_OTLP_TRACES_HEADERS,overwrite,separator=="`
+	MetricsHeaders                  map[string]string `env:"OTEL_EXPORTER_OTLP_METRICS_HEADERS,overwrite,separator=="`
 	ResourceAttributes              map[string]string
 	SpanProcessors                  []trace.SpanProcessor
 	Sampler                         trace.Sampler
