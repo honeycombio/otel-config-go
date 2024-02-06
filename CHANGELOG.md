@@ -4,7 +4,7 @@
 
 ### Enhancements
 
-- fix(headers): Populate headers from specified environment variables (#99) | @smoyer64
+- feat: Populate headers from specified environment variables (#99) | @smoyer64
 - feat: Add additional tests for handling OTel env vars for signal generic and specific exporter headers | @MikeGoldsmith
 
 ### Maintenance
