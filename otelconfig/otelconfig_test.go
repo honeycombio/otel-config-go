@@ -368,9 +368,9 @@ func TestEnvironmentVariables(t *testing.T) {
 		MetricsEnabled:                  false,
 		MetricsReportingPeriod:          "30s",
 		LogLevel:                        "debug",
-		Headers:                         map[string]string{},
-		TracesHeaders:                   map[string]string{},
-		MetricsHeaders:                  map[string]string{},
+		Headers:                         map[string]string{"env-headers": "present"},
+		TracesHeaders:                   map[string]string{"env-traces-headers": "present"},
+		MetricsHeaders:                  map[string]string{"env-metrics-headers": "present"},
 		ResourceAttributes:              map[string]string{},
 		ResourceAttributesFromEnv:       "service.name=test-service-name-b,resource.clobber=ENV_WON",
 		Propagators:                     []string{"b3", "w3c"},
@@ -447,9 +447,9 @@ func TestConfigurationOverrides(t *testing.T) {
 		MetricsExporterEndpointInsecure: false,
 		MetricsReportingPeriod:          "30s",
 		LogLevel:                        "info",
-		Headers:                         map[string]string{"config-headers": "present"},
-		TracesHeaders:                   map[string]string{"config-traces": "present"},
-		MetricsHeaders:                  map[string]string{"config-metrics": "present"},
+		Headers:                         map[string]string{"config-headers": "present", "env-headers": "present"},
+		TracesHeaders:                   map[string]string{"config-traces": "present", "env-traces-headers": "present"},
+		MetricsHeaders:                  map[string]string{"config-metrics": "present", "env-metrics-headers": "present"},
 		ResourceAttributes:              map[string]string{},
 		ResourceAttributesFromEnv:       "service.name=test-service-name-b,resource.clobber=ENV_WON",
 		Propagators:                     []string{"b3"},
@@ -468,9 +468,9 @@ func TestConfigurationOverrides(t *testing.T) {
 			resource.WithDetectors(&testDetector{}),
 		},
 	}
-	// Generic and signal-specific headers should merge
-	expectedTraceHeaders := map[string]string{"config-headers": "present", "config-traces": "present"}
-	expectedMetricsHeaders := map[string]string{"config-headers": "present", "config-metrics": "present"}
+	// Env, signal-generic and signal-specific headers should merge
+	expectedTraceHeaders := map[string]string{"config-headers": "present", "config-traces": "present", "env-headers": "present", "env-traces-headers": "present"}
+	expectedMetricsHeaders := map[string]string{"config-headers": "present", "config-metrics": "present", "env-headers": "present", "env-metrics-headers": "present"}
 
 	assert.NoError(t, err)
 	assert.Equal(t, expectedConfig, testConfig)
@@ -1022,6 +1022,9 @@ func setEnvironment() {
 	setenv("OTEL_EXPORTER_OTLP_TRACES_INSECURE", "true")
 	setenv("OTEL_SERVICE_NAME", "test-service-name")
 	setenv("OTEL_SERVICE_VERSION", "test-service-version")
+	setenv("OTEL_EXPORTER_OTLP_HEADERS", "env-headers=present")
+	setenv("OTEL_EXPORTER_OTLP_TRACES_HEADERS", "env-traces-headers=present")
+	setenv("OTEL_EXPORTER_OTLP_METRICS_HEADERS", "env-metrics-headers=present")
 	setenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "http://metrics-url")
 	setenv("OTEL_EXPORTER_OTLP_METRICS_INSECURE", "true")
 	setenv("OTEL_METRICS_ENABLED", "false")
