@@ -368,9 +368,9 @@ func TestEnvironmentVariables(t *testing.T) {
 		MetricsEnabled:                  false,
 		MetricsReportingPeriod:          "30s",
 		LogLevel:                        "debug",
-		Headers:                         map[string]string{"env-headers": "present"},
-		TracesHeaders:                   map[string]string{"env-traces-headers": "present"},
-		MetricsHeaders:                  map[string]string{"env-metrics-headers": "present"},
+		Headers:                         map[string]string{"env-headers": "present", "header-clobber": "ENV_WON"},
+		TracesHeaders:                   map[string]string{"env-traces-headers": "present", "header-clobber": "ENV_WON"},
+		MetricsHeaders:                  map[string]string{"env-metrics-headers": "present", "header-clobber": "ENV_WON"},
 		ResourceAttributes:              map[string]string{},
 		ResourceAttributesFromEnv:       "service.name=test-service-name-b,resource.clobber=ENV_WON",
 		Propagators:                     []string{"b3", "w3c"},
@@ -407,9 +407,9 @@ func TestConfigurationOverrides(t *testing.T) {
 		WithTracesExporterInsecure(false),
 		WithMetricsExporterEndpoint("override-metrics-url"),
 		WithMetricsExporterInsecure(false),
-		WithHeaders(map[string]string{"config-headers": "present"}),
-		WithTracesHeaders(map[string]string{"config-traces": "present"}),
-		WithMetricsHeaders(map[string]string{"config-metrics": "present"}),
+		WithHeaders(map[string]string{"config-headers": "present", "header-clobber": "CODE_WON"}),
+		WithTracesHeaders(map[string]string{"config-traces": "present", "header-clobber": "CODE_WON"}),
+		WithMetricsHeaders(map[string]string{"config-metrics": "present", "header-clobber": "CODE_WON"}),
 		WithLogLevel("info"),
 		WithLogger(logger),
 		WithErrorHandler(handler),
@@ -447,9 +447,9 @@ func TestConfigurationOverrides(t *testing.T) {
 		MetricsExporterEndpointInsecure: false,
 		MetricsReportingPeriod:          "30s",
 		LogLevel:                        "info",
-		Headers:                         map[string]string{"config-headers": "present", "env-headers": "present"},
-		TracesHeaders:                   map[string]string{"config-traces": "present", "env-traces-headers": "present"},
-		MetricsHeaders:                  map[string]string{"config-metrics": "present", "env-metrics-headers": "present"},
+		Headers:                         map[string]string{"config-headers": "present", "env-headers": "present", "header-clobber": "ENV_WON"},
+		TracesHeaders:                   map[string]string{"config-traces": "present", "env-traces-headers": "present", "header-clobber": "ENV_WON"},
+		MetricsHeaders:                  map[string]string{"config-metrics": "present", "env-metrics-headers": "present", "header-clobber": "ENV_WON"},
 		ResourceAttributes:              map[string]string{},
 		ResourceAttributesFromEnv:       "service.name=test-service-name-b,resource.clobber=ENV_WON",
 		Propagators:                     []string{"b3"},
@@ -469,8 +469,8 @@ func TestConfigurationOverrides(t *testing.T) {
 		},
 	}
 	// Env, signal-generic and signal-specific headers should merge
-	expectedTraceHeaders := map[string]string{"config-headers": "present", "config-traces": "present", "env-headers": "present", "env-traces-headers": "present"}
-	expectedMetricsHeaders := map[string]string{"config-headers": "present", "config-metrics": "present", "env-headers": "present", "env-metrics-headers": "present"}
+	expectedTraceHeaders := map[string]string{"config-headers": "present", "config-traces": "present", "env-headers": "present", "env-traces-headers": "present", "header-clobber": "ENV_WON"}
+	expectedMetricsHeaders := map[string]string{"config-headers": "present", "config-metrics": "present", "env-headers": "present", "env-metrics-headers": "present", "header-clobber": "ENV_WON"}
 
 	assert.NoError(t, err)
 	assert.Equal(t, expectedConfig, testConfig)
@@ -1022,9 +1022,9 @@ func setEnvironment() {
 	setenv("OTEL_EXPORTER_OTLP_TRACES_INSECURE", "true")
 	setenv("OTEL_SERVICE_NAME", "test-service-name")
 	setenv("OTEL_SERVICE_VERSION", "test-service-version")
-	setenv("OTEL_EXPORTER_OTLP_HEADERS", "env-headers=present")
-	setenv("OTEL_EXPORTER_OTLP_TRACES_HEADERS", "env-traces-headers=present")
-	setenv("OTEL_EXPORTER_OTLP_METRICS_HEADERS", "env-metrics-headers=present")
+	setenv("OTEL_EXPORTER_OTLP_HEADERS", "env-headers=present,header-clobber=ENV_WON")
+	setenv("OTEL_EXPORTER_OTLP_TRACES_HEADERS", "env-traces-headers=present,header-clobber=ENV_WON")
+	setenv("OTEL_EXPORTER_OTLP_METRICS_HEADERS", "env-metrics-headers=present,header-clobber=ENV_WON")
 	setenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "http://metrics-url")
 	setenv("OTEL_EXPORTER_OTLP_METRICS_INSECURE", "true")
 	setenv("OTEL_METRICS_ENABLED", "false")
