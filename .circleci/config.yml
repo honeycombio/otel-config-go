@@ -24,6 +24,8 @@ jobs:
           keys:
             - v1-go-mod-{{ checksum "go.sum" }}
       - run: make test
+      - store_test_results:
+          path: test_results
       - save_cache:
           key: v1-go-mod-{{ checksum "go.sum" }}
           paths:

@@ -3,8 +3,10 @@ clean:
 	rm -rf ./smoke-tests/collector/data-results/*.json
 	rm -rf ./smoke-tests/report.*
 
+GOTESTCMD = $(if $(shell command -v gotestsum),gotestsum --junitfile ./test_results/$(1).xml --format testname --,go test)
+
 test:
-	go test -v ./...
+	$(call GOTESTCMD,$@) -v ./...
 
 smoke-tests/collector/data.json:
 	@echo ""
