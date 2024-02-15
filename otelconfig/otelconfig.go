@@ -345,7 +345,7 @@ func newConfig(opts ...Option) (*Config, error) {
 		c.ExporterEndpoint = DefaultExporterEndpoint
 	}
 
-	// get any vendor specific options
+	// If a vendor has specific options to add, add them to opts
 	vendorOpts := []Option{}
 	if SetVendorOptions != nil {
 		vendorOpts = append(vendorOpts, SetVendorOptions()...)
