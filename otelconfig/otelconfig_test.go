@@ -208,6 +208,7 @@ func TestValidConfig(t *testing.T) {
 
 func TestInvalidEnvironment(t *testing.T) {
 	setenv("OTEL_EXPORTER_OTLP_METRICS_INSECURE", "bleargh")
+	defer unsetAllOtelEnvironmentVariables()
 
 	logger := &testLogger{}
 
@@ -217,11 +218,11 @@ func TestInvalidEnvironment(t *testing.T) {
 	)
 	require.ErrorContains(t, err, "environment error")
 	logger.requireContains(t, "environment error")
-	unsetEnvironment()
 }
 
 func TestInvalidMetricsPushIntervalEnv(t *testing.T) {
 	setenv("OTEL_EXPORTER_OTLP_METRICS_PERIOD", "300million")
+	defer unsetAllOtelEnvironmentVariables()
 
 	logger := &testLogger{}
 	shutdown, err := ConfigureOpenTelemetry(
@@ -231,7 +232,6 @@ func TestInvalidMetricsPushIntervalEnv(t *testing.T) {
 	)
 	defer shutdown()
 	assert.ErrorContains(t, err, "setup error: invalid metric reporting period")
-	unsetEnvironment()
 }
 
 func TestInvalidMetricsPushIntervalConfig(t *testing.T) {
@@ -245,7 +245,6 @@ func TestInvalidMetricsPushIntervalConfig(t *testing.T) {
 	defer shutdown()
 
 	assert.ErrorContains(t, err, "setup error: invalid metric reporting period")
-	unsetEnvironment()
 }
 
 func TestDebugEnabled(t *testing.T) {
@@ -337,6 +336,8 @@ func TestDefaultConfigMarshal(t *testing.T) {
 
 func TestEnvironmentVariables(t *testing.T) {
 	setEnvironment()
+	defer unsetAllOtelEnvironmentVariables()
+
 	logger := &testLogger{}
 	handler := &testErrorHandler{}
 	testConfig, err := newConfig(
@@ -366,7 +367,7 @@ func TestEnvironmentVariables(t *testing.T) {
 		MetricsExporterEndpoint:         "http://metrics-url",
 		MetricsExporterEndpointInsecure: true,
 		MetricsEnabled:                  false,
-		MetricsReportingPeriod:          "30s",
+		MetricsReportingPeriod:          "42s",
 		LogLevel:                        "debug",
 		Headers:                         map[string]string{"env-headers": "present", "header-clobber": "ENV_WON"},
 		TracesHeaders:                   map[string]string{"env-traces-headers": "present", "header-clobber": "ENV_WON"},
@@ -381,7 +382,6 @@ func TestEnvironmentVariables(t *testing.T) {
 	}
 	assert.NoError(t, err)
 	assert.Equal(t, expectedConfig, testConfig)
-	unsetEnvironment()
 }
 
 type testDetector struct{}
@@ -395,6 +395,8 @@ func (testDetector) Detect(ctx context.Context) (*resource.Resource, error) {
 
 func TestConfigurationOverrides(t *testing.T) {
 	setEnvironment()
+	defer unsetAllOtelEnvironmentVariables()
+
 	logger := &testLogger{}
 	handler := &testErrorHandler{}
 	testConfig, err := newConfig(
@@ -444,7 +446,7 @@ func TestConfigurationOverrides(t *testing.T) {
 		TracesEnabled:                   true,
 		MetricsExporterEndpoint:         "http://metrics-url",
 		MetricsExporterEndpointInsecure: true,
-		MetricsReportingPeriod:          "30s",
+		MetricsReportingPeriod:          "42s",
 		LogLevel:                        "debug",
 		Headers:                         map[string]string{"env-headers": "present", "header-clobber": "ENV_WON"},
 		TracesHeaders:                   map[string]string{"env-traces-headers": "present", "header-clobber": "ENV_WON"},
@@ -474,7 +476,6 @@ func TestConfigurationOverrides(t *testing.T) {
 	assert.Equal(t, expectedConfig, testConfig)
 	assert.Equal(t, expectedTraceHeaders, testConfig.getTracesHeaders())
 	assert.Equal(t, expectedMetricsHeaders, testConfig.getMetricsHeaders())
-	unsetEnvironment()
 }
 
 type TestCarrier struct {
@@ -507,7 +508,6 @@ func TestConfigurePropagators1(t *testing.T) {
 
 	ctx := baggage.ContextWithBaggage(context.Background(), bag)
 
-	unsetEnvironment()
 	logger := &testLogger{}
 	shutdown, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
@@ -539,7 +539,6 @@ func TestConfigurePropagators2(t *testing.T) {
 
 	ctx := baggage.ContextWithBaggage(context.Background(), bag)
 
-	unsetEnvironment()
 	logger := &testLogger{}
 	shutdown, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
@@ -567,7 +566,6 @@ func TestConfigurePropagators3(t *testing.T) {
 	stopper := dummyGRPCListener()
 	defer stopper()
 
-	unsetEnvironment()
 	logger := &testLogger{}
 	shutdown, err := ConfigureOpenTelemetry(
 		WithLogger(logger),
@@ -586,6 +584,8 @@ func host() string {
 
 func TestConfigureResourcesAttributes(t *testing.T) {
 	setenv("OTEL_RESOURCE_ATTRIBUTES", "label1=value1,label2=value2")
+	defer unsetAllOtelEnvironmentVariables()
+
 	config := Config{
 		ServiceName:    "test-service",
 		ServiceVersion: "test-version",
@@ -644,6 +644,8 @@ func TestServiceNameViaResourceAttributes(t *testing.T) {
 	defer stopper()
 
 	setenv("OTEL_RESOURCE_ATTRIBUTES", "service.name=test-service-b")
+	defer unsetAllOtelEnvironmentVariables()
+
 	logger := &testLogger{}
 	shutdown, _ := ConfigureOpenTelemetry(
 		WithLogger(logger),
@@ -660,6 +662,8 @@ func TestEmptyHostnameDefaultsToOsHostname(t *testing.T) {
 	defer stopper()
 
 	setenv("OTEL_RESOURCE_ATTRIBUTES", "host.name=")
+	defer unsetAllOtelEnvironmentVariables()
+
 	shutdown, _ := ConfigureOpenTelemetry(
 		WithServiceName("test-service"),
 		WithTracesExporterEndpoint("localhost:443"),
@@ -680,7 +684,6 @@ func TestEmptyHostnameDefaultsToOsHostname(t *testing.T) {
 }
 
 func TestConfigWithResourceAttributes(t *testing.T) {
-	unsetEnvironment()
 	stopper := dummyGRPCListener()
 	defer stopper()
 
@@ -758,7 +761,6 @@ func TestConfigWithUnmergableResources(t *testing.T) {
 }
 
 func TestThatEndpointsFallBackCorrectly(t *testing.T) {
-	unsetEnvironment()
 	testCases := []struct {
 		name            string
 		configOpts      []Option
@@ -940,15 +942,15 @@ func TestCanSetDefaultExporterEndpoint(t *testing.T) {
 
 func TestCustomDefaultExporterEndpointDoesNotReplaceEnvVar(t *testing.T) {
 	setEnvironment()
+	defer unsetAllOtelEnvironmentVariables()
+
 	DefaultExporterEndpoint = "http://custom.endpoint"
 	config, err := newConfig()
 	assert.NoError(t, err)
 	assert.Equal(t, "http://generic-url", config.ExporterEndpoint)
-	unsetEnvironment()
 }
 
 func TestCustomDefaultExporterEndpointDoesNotReplaceOption(t *testing.T) {
-	unsetEnvironment()
 	DefaultExporterEndpoint = "http://custom.endpoint"
 	config, err := newConfig(
 		WithExporterEndpoint("http://other.endpoint"),
@@ -975,7 +977,6 @@ func TestResourceDetectorsDontError(t *testing.T) {
 	)
 	assert.NoError(t, err)
 	defer shutdown()
-	unsetEnvironment()
 }
 
 func TestContribResourceDetectorsDontError(t *testing.T) {
@@ -984,6 +985,8 @@ func TestContribResourceDetectorsDontError(t *testing.T) {
 	defer stopper()
 
 	setenv("AWS_LAMBDA_FUNCTION_NAME", "lambdatest")
+	defer os.Unsetenv("AWS_LAMBDA_FUNCTION_NAME")
+
 	lambdaDetector := lambda.NewResourceDetector()
 
 	_, err := ConfigureOpenTelemetry(
@@ -992,7 +995,6 @@ func TestContribResourceDetectorsDontError(t *testing.T) {
 		withTestExporters(),
 	)
 	assert.NoError(t, err, "cannot merge resource due to conflicting Schema URL")
-	unsetEnvironment()
 }
 
 type testSampler struct {
@@ -1013,48 +1015,45 @@ func setenv(key string, value string) {
 	_ = os.Setenv(key, value)
 }
 
-func setEnvironment() {
-	setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://generic-url")
-	setenv("OTEL_EXPORTER_OTLP_INSECURE", "true")
-	setenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "http://traces-url")
-	setenv("OTEL_EXPORTER_OTLP_TRACES_INSECURE", "true")
-	setenv("OTEL_SERVICE_NAME", "test-service-name")
-	setenv("OTEL_SERVICE_VERSION", "test-service-version")
-	setenv("OTEL_EXPORTER_OTLP_HEADERS", "env-headers=present,header-clobber=ENV_WON")
-	setenv("OTEL_EXPORTER_OTLP_TRACES_HEADERS", "env-traces-headers=present,header-clobber=ENV_WON")
-	setenv("OTEL_EXPORTER_OTLP_METRICS_HEADERS", "env-metrics-headers=present,header-clobber=ENV_WON")
-	setenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "http://metrics-url")
-	setenv("OTEL_EXPORTER_OTLP_METRICS_INSECURE", "true")
-	setenv("OTEL_METRICS_ENABLED", "false")
-	setenv("OTEL_LOG_LEVEL", "debug")
-	setenv("OTEL_PROPAGATORS", "b3,w3c")
-	setenv("OTEL_RESOURCE_ATTRIBUTES", "resource.clobber=ENV_WON")
-	setenv("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc")
+// A map of the settings used to test configuring OpenTelemetry via environment variables.
+var environmentOtelSettings = map[string]string{
+	"OTEL_EXPORTER_OTLP_ENDPOINT":         "http://generic-url",
+	"OTEL_EXPORTER_OTLP_INSECURE":         "true",
+	"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT":  "http://traces-url",
+	"OTEL_EXPORTER_OTLP_TRACES_INSECURE":  "true",
+	"OTEL_SERVICE_NAME":                   "test-service-name",
+	"OTEL_SERVICE_VERSION":                "test-service-version",
+	"OTEL_EXPORTER_OTLP_HEADERS":          "env-headers=present,header-clobber=ENV_WON",
+	"OTEL_EXPORTER_OTLP_TRACES_HEADERS":   "env-traces-headers=present,header-clobber=ENV_WON",
+	"OTEL_EXPORTER_OTLP_METRICS_HEADERS":  "env-metrics-headers=present,header-clobber=ENV_WON",
+	"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT": "http://metrics-url",
+	"OTEL_EXPORTER_OTLP_METRICS_INSECURE": "true",
+	"OTEL_METRICS_ENABLED":                "false",
+	"OTEL_LOG_LEVEL":                      "debug",
+	"OTEL_PROPAGATORS":                    "b3,w3c",
+	"OTEL_RESOURCE_ATTRIBUTES":            "resource.clobber=ENV_WON",
+	"OTEL_EXPORTER_OTLP_PROTOCOL":         "grpc",
+	"OTEL_EXPORTER_OTLP_METRICS_PERIOD":   "42s",
 }
 
-func unsetEnvironment() {
-	vars := []string{
-		"OTEL_SERVICE_NAME",
-		"OTEL_SERVICE_VERSION",
-		"OTEL_EXPORTER_OTLP_ENDPOINT",
-		"OTEL_EXPORTER_OTLP_INSECURE",
-		"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
-		"OTEL_EXPORTER_OTLP_TRACES_INSECURE",
-		"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
-		"OTEL_EXPORTER_OTLP_METRICS_INSECURE",
-		"OTEL_LOG_LEVEL",
-		"OTEL_PROPAGATORS",
-		"OTEL_RESOURCE_ATTRIBUTES",
-		"OTEL_EXPORTER_OTLP_METRICS_PERIOD",
-		"OTEL_METRICS_ENABLED",
-		"OTEL_EXPORTER_OTLP_PROTOCOL",
+// setEnvironment sets OTEL_ environment variables for testing config via environment.
+func setEnvironment() {
+	for varName, varValue := range environmentOtelSettings {
+		setenv(varName, varValue)
 	}
-	for _, envvar := range vars {
-		_ = os.Unsetenv(envvar)
+}
+
+// Clears all OTEL_ environment variables, even ones not set by setEnvironment().
+func unsetAllOtelEnvironmentVariables() {
+	for _, envVar := range os.Environ() {
+		if strings.HasPrefix(envVar, "OTEL_") {
+			parts := strings.SplitN(envVar, "=", 2)
+			_ = os.Unsetenv(parts[0])
+		}
 	}
 }
 
 func TestMain(m *testing.M) {
-	unsetEnvironment()
+	unsetAllOtelEnvironmentVariables()
 	os.Exit(m.Run())
 }
