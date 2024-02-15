@@ -301,27 +301,26 @@ func (l *defaultHandler) Handle(err error) {
 // vary depending on the protocol chosen. If not overridden by explicit configuration, it will
 // be overridden with an appropriate default upon initialization.
 type Config struct {
-	ExporterEndpoint                string            `env:"OTEL_EXPORTER_OTLP_ENDPOINT"`
+	ExporterEndpoint                string            `env:"OTEL_EXPORTER_OTLP_ENDPOINT,overwrite"`
 	ExporterEndpointInsecure        bool              `env:"OTEL_EXPORTER_OTLP_INSECURE,default=false"`
-	TracesExporterEndpoint          string            `env:"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"`
+	TracesExporterEndpoint          string            `env:"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,overwrite"`
 	TracesExporterEndpointInsecure  bool              `env:"OTEL_EXPORTER_OTLP_TRACES_INSECURE"`
 	TracesEnabled                   bool              `env:"OTEL_TRACES_ENABLED,default=true"`
-	ServiceName                     string            `env:"OTEL_SERVICE_NAME"`
-	ServiceVersion                  string            `env:"OTEL_SERVICE_VERSION,default=unknown"`
-	MetricsExporterEndpoint         string            `env:"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"`
+	ServiceName                     string            `env:"OTEL_SERVICE_NAME,overwrite"`
+	ServiceVersion                  string            `env:"OTEL_SERVICE_VERSION,overwrite,default=unknown"`
+	MetricsExporterEndpoint         string            `env:"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT,overwrite"`
 	MetricsExporterEndpointInsecure bool              `env:"OTEL_EXPORTER_OTLP_METRICS_INSECURE"`
 	MetricsEnabled                  bool              `env:"OTEL_METRICS_ENABLED,default=true"`
-	MetricsReportingPeriod          string            `env:"OTEL_EXPORTER_OTLP_METRICS_PERIOD,default=30s"`
-	LogLevel                        string            `env:"OTEL_LOG_LEVEL,default=info"`
-	Propagators                     []string          `env:"OTEL_PROPAGATORS,default=tracecontext,baggage"`
-	ResourceAttributesFromEnv       string            `env:"OTEL_RESOURCE_ATTRIBUTES"`
-	ExporterProtocol                Protocol          `env:"OTEL_EXPORTER_OTLP_PROTOCOL,default=grpc"`
-	TracesExporterProtocol          Protocol          `env:"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL"`
-	MetricsExporterProtocol         Protocol          `env:"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"`
+	MetricsReportingPeriod          string            `env:"OTEL_EXPORTER_OTLP_METRICS_PERIOD,overwrite,default=30s"`
+	LogLevel                        string            `env:"OTEL_LOG_LEVEL,overwrite,default=info"`
+	ResourceAttributes              map[string]string `env:"OTEL_RESOURCE_ATTRIBUTES,overwrite,separator=="`
+	Propagators                     []string          `env:"OTEL_PROPAGATORS,overwrite,default=tracecontext,baggage"`
+	ExporterProtocol                Protocol          `env:"OTEL_EXPORTER_OTLP_PROTOCOL,overwrite,default=grpc"`
+	TracesExporterProtocol          Protocol          `env:"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL,overwrite"`
+	MetricsExporterProtocol         Protocol          `env:"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL,overwrite"`
 	Headers                         map[string]string `env:"OTEL_EXPORTER_OTLP_HEADERS,overwrite,separator=="`
 	TracesHeaders                   map[string]string `env:"OTEL_EXPORTER_OTLP_TRACES_HEADERS,overwrite,separator=="`
 	MetricsHeaders                  map[string]string `env:"OTEL_EXPORTER_OTLP_METRICS_HEADERS,overwrite,separator=="`
-	ResourceAttributes              map[string]string
 	SpanProcessors                  []trace.SpanProcessor
 	Sampler                         trace.Sampler
 	ResourceOptions                 []resource.Option
@@ -341,18 +340,12 @@ func newConfig(opts ...Option) (*Config, error) {
 		errorHandler:       &defaultHandler{logger: defLogger},
 		Sampler:            trace.AlwaysSample(),
 	}
-	envError := envconfig.Process(context.Background(), c)
-	if envError != nil {
-		c.Logger.Fatalf("environment error: %v", envError)
-		// if our logger implementation doesn't os.Exit, we want to return here
-		return nil, fmt.Errorf("environment error: %w", envError)
-	}
 	// if exporter endpoint is not set using an env var, use the configured default
 	if c.ExporterEndpoint == "" {
 		c.ExporterEndpoint = DefaultExporterEndpoint
 	}
 
-	// If a vendor has specific options to add, add them to opts
+	// get any vendor specific options
 	vendorOpts := []Option{}
 	if SetVendorOptions != nil {
 		vendorOpts = append(vendorOpts, SetVendorOptions()...)
@@ -366,6 +359,14 @@ func newConfig(opts ...Option) (*Config, error) {
 	// If using defaultLogger, update it's LogLevel to configured level
 	if l, ok := c.Logger.(*defaultLogger); ok {
 		l.logLevel = c.LogLevel
+	}
+
+	// apply environment variables last to override any other settings
+	envError := envconfig.Process(context.Background(), c)
+	if envError != nil {
+		c.Logger.Fatalf("environment error: %v", envError)
+		// if our logger implementation doesn't os.Exit, we want to return here
+		return nil, fmt.Errorf("environment error: %w", envError)
 	}
 
 	var err error

@@ -371,8 +371,7 @@ func TestEnvironmentVariables(t *testing.T) {
 		Headers:                         map[string]string{"env-headers": "present", "header-clobber": "ENV_WON"},
 		TracesHeaders:                   map[string]string{"env-traces-headers": "present", "header-clobber": "ENV_WON"},
 		MetricsHeaders:                  map[string]string{"env-metrics-headers": "present", "header-clobber": "ENV_WON"},
-		ResourceAttributes:              map[string]string{},
-		ResourceAttributesFromEnv:       "service.name=test-service-name-b,resource.clobber=ENV_WON",
+		ResourceAttributes:              map[string]string{"resource.clobber": "ENV_WON"},
 		Propagators:                     []string{"b3", "w3c"},
 		Resource:                        expectedConfiguredResource,
 		Logger:                          logger,
@@ -428,34 +427,33 @@ func TestConfigurationOverrides(t *testing.T) {
 		semconv.SchemaURL,
 		attribute.String("host.name", "hardcoded-hostname"),
 		attribute.String("resource.clobber", "CODE_WON"),
-		attribute.String("service.name", "override-service-name"),
-		attribute.String("service.version", "override-service-version"),
+		attribute.String("service.name", "test-service-name"),
+		attribute.String("service.version", "test-service-version"),
 		attribute.String("telemetry.sdk.name", "otelconfig"),
 		attribute.String("telemetry.sdk.language", "go"),
 		attribute.String("telemetry.sdk.version", version),
 	)
 
 	expectedConfig := &Config{
-		ServiceName:                     "override-service-name",
-		ServiceVersion:                  "override-service-version",
-		ExporterEndpoint:                "https://override-generic-url",
-		ExporterEndpointInsecure:        false,
-		TracesExporterEndpoint:          "override-traces-url",
-		TracesExporterEndpointInsecure:  false,
+		ServiceName:                     "test-service-name",
+		ServiceVersion:                  "test-service-version",
+		ExporterEndpoint:                "http://generic-url",
+		ExporterEndpointInsecure:        true,
+		TracesExporterEndpoint:          "http://traces-url",
+		TracesExporterEndpointInsecure:  true,
 		TracesEnabled:                   true,
-		MetricsExporterEndpoint:         "override-metrics-url",
-		MetricsExporterEndpointInsecure: false,
+		MetricsExporterEndpoint:         "http://metrics-url",
+		MetricsExporterEndpointInsecure: true,
 		MetricsReportingPeriod:          "30s",
-		LogLevel:                        "info",
-		Headers:                         map[string]string{"config-headers": "present", "env-headers": "present", "header-clobber": "ENV_WON"},
-		TracesHeaders:                   map[string]string{"config-traces": "present", "env-traces-headers": "present", "header-clobber": "ENV_WON"},
-		MetricsHeaders:                  map[string]string{"config-metrics": "present", "env-metrics-headers": "present", "header-clobber": "ENV_WON"},
-		ResourceAttributes:              map[string]string{},
-		ResourceAttributesFromEnv:       "service.name=test-service-name-b,resource.clobber=ENV_WON",
-		Propagators:                     []string{"b3"},
+		LogLevel:                        "debug",
+		Headers:                         map[string]string{"env-headers": "present", "header-clobber": "ENV_WON"},
+		TracesHeaders:                   map[string]string{"env-traces-headers": "present", "header-clobber": "ENV_WON"},
+		MetricsHeaders:                  map[string]string{"env-metrics-headers": "present", "header-clobber": "ENV_WON"},
+		ResourceAttributes:              map[string]string{"resource.clobber": "ENV_WON"},
+		Propagators:                     []string{"b3", "w3c"},
 		Resource:                        expectedConfiguredResource,
 		Logger:                          logger,
-		ExporterProtocol:                "http/protobuf",
+		ExporterProtocol:                "grpc",
 		TracesExporterProtocol:          "http/protobuf",
 		MetricsExporterProtocol:         "http/protobuf",
 		errorHandler:                    handler,
@@ -469,8 +467,8 @@ func TestConfigurationOverrides(t *testing.T) {
 		},
 	}
 	// Env, signal-generic and signal-specific headers should merge
-	expectedTraceHeaders := map[string]string{"config-headers": "present", "config-traces": "present", "env-headers": "present", "env-traces-headers": "present", "header-clobber": "ENV_WON"}
-	expectedMetricsHeaders := map[string]string{"config-headers": "present", "config-metrics": "present", "env-headers": "present", "env-metrics-headers": "present", "header-clobber": "ENV_WON"}
+	expectedTraceHeaders := map[string]string{"env-headers": "present", "env-traces-headers": "present", "header-clobber": "ENV_WON"}
+	expectedMetricsHeaders := map[string]string{"env-headers": "present", "env-metrics-headers": "present", "header-clobber": "ENV_WON"}
 
 	assert.NoError(t, err)
 	assert.Equal(t, expectedConfig, testConfig)
@@ -682,6 +680,7 @@ func TestEmptyHostnameDefaultsToOsHostname(t *testing.T) {
 }
 
 func TestConfigWithResourceAttributes(t *testing.T) {
+	unsetEnvironment()
 	stopper := dummyGRPCListener()
 	defer stopper()
 
@@ -949,14 +948,13 @@ func TestCustomDefaultExporterEndpointDoesNotReplaceEnvVar(t *testing.T) {
 }
 
 func TestCustomDefaultExporterEndpointDoesNotReplaceOption(t *testing.T) {
-	setEnvironment()
-	DefaultExporterEndpoint = "http://http://custom.endpoint"
+	unsetEnvironment()
+	DefaultExporterEndpoint = "http://custom.endpoint"
 	config, err := newConfig(
 		WithExporterEndpoint("http://other.endpoint"),
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, "http://other.endpoint", config.ExporterEndpoint)
-	unsetEnvironment()
 }
 
 func TestSemanticConventionVersionMatchesUpstream(t *testing.T) {
@@ -1030,7 +1028,7 @@ func setEnvironment() {
 	setenv("OTEL_METRICS_ENABLED", "false")
 	setenv("OTEL_LOG_LEVEL", "debug")
 	setenv("OTEL_PROPAGATORS", "b3,w3c")
-	setenv("OTEL_RESOURCE_ATTRIBUTES", "service.name=test-service-name-b,resource.clobber=ENV_WON")
+	setenv("OTEL_RESOURCE_ATTRIBUTES", "resource.clobber=ENV_WON")
 	setenv("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc")
 }
 
