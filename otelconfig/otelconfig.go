@@ -361,7 +361,7 @@ func newConfig(opts ...Option) (*Config, error) {
 		l.logLevel = c.LogLevel
 	}
 
-	// apply environment variables last to override any other settings
+	// apply environment variables last to override any vendor or user options
 	envError := envconfig.Process(context.Background(), c)
 	if envError != nil {
 		c.Logger.Fatalf("environment error: %v", envError)
