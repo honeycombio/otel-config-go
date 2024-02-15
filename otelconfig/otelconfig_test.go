@@ -466,7 +466,7 @@ func TestConfigurationOverrides(t *testing.T) {
 			resource.WithDetectors(&testDetector{}),
 		},
 	}
-	// Env, signal-generic and signal-specific headers should merge
+	// Generic and signal-specific headers should merge
 	expectedTraceHeaders := map[string]string{"env-headers": "present", "env-traces-headers": "present", "header-clobber": "ENV_WON"}
 	expectedMetricsHeaders := map[string]string{"env-headers": "present", "env-metrics-headers": "present", "header-clobber": "ENV_WON"}
 
