@@ -313,7 +313,6 @@ type Config struct {
 	MetricsEnabled                  bool              `env:"OTEL_METRICS_ENABLED,default=true"`
 	MetricsReportingPeriod          string            `env:"OTEL_EXPORTER_OTLP_METRICS_PERIOD,overwrite,default=30s"`
 	LogLevel                        string            `env:"OTEL_LOG_LEVEL,overwrite,default=info"`
-	ResourceAttributes              map[string]string `env:"OTEL_RESOURCE_ATTRIBUTES,overwrite,separator=="`
 	Propagators                     []string          `env:"OTEL_PROPAGATORS,overwrite,default=tracecontext,baggage"`
 	ExporterProtocol                Protocol          `env:"OTEL_EXPORTER_OTLP_PROTOCOL,overwrite,default=grpc"`
 	TracesExporterProtocol          Protocol          `env:"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL,overwrite"`
@@ -321,6 +320,7 @@ type Config struct {
 	Headers                         map[string]string `env:"OTEL_EXPORTER_OTLP_HEADERS,overwrite,separator=="`
 	TracesHeaders                   map[string]string `env:"OTEL_EXPORTER_OTLP_TRACES_HEADERS,overwrite,separator=="`
 	MetricsHeaders                  map[string]string `env:"OTEL_EXPORTER_OTLP_METRICS_HEADERS,overwrite,separator=="`
+	ResourceAttributes              map[string]string `env:"OTEL_RESOURCE_ATTRIBUTES,overwrite,separator=="`
 	SpanProcessors                  []trace.SpanProcessor
 	Sampler                         trace.Sampler
 	ResourceOptions                 []resource.Option
