@@ -7,8 +7,13 @@
 - feat: Populate headers from specified environment variables (#99) | @smoyer64
 - feat: Add additional tests for handling OTel env vars for signal generic and specific exporter headers (#106) | @MikeGoldsmith
 
+### Fixes
+
+- fix: Prefer environment variables over code configuration (#106) | @MikeGoldsmith
+
 ### Maintenance
 
+- maint: upload test results to CircleCI & add Go 1.22 to test matrix (#108) | @robbkidd
 - maint: update codeowners to pipeline-team (#97) | @JamieDanielson
 - maint: update codeowners to pipeline (#96) | @JamieDanielson
 - maint(deps): bump go.opentelemetry.io/proto/otlp from 1.0.0 to 1.1.0 (#105) | @Dependabot
