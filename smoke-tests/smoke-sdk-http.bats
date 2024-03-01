@@ -38,7 +38,7 @@ teardown_file() {
 	assert_equal "$code_result" '"CODE"'
 }
 
-@test "Resource attributes set in code win over matching key set in environment" {
+@test "Resource attributes set in environment win over matching key set in code" {
 	clobber_result=$(spans_received | jq ".resource.attributes[] | select(.key == \"resource.example_clobber\") | .value.stringValue")
-	assert_equal "$clobber_result" '"CODE_WON"'
+	assert_equal "$clobber_result" '"ENV_WON"'
 }

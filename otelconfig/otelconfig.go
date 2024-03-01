@@ -301,27 +301,26 @@ func (l *defaultHandler) Handle(err error) {
 // vary depending on the protocol chosen. If not overridden by explicit configuration, it will
 // be overridden with an appropriate default upon initialization.
 type Config struct {
-	ExporterEndpoint                string            `env:"OTEL_EXPORTER_OTLP_ENDPOINT"`
+	ExporterEndpoint                string            `env:"OTEL_EXPORTER_OTLP_ENDPOINT,overwrite"`
 	ExporterEndpointInsecure        bool              `env:"OTEL_EXPORTER_OTLP_INSECURE,default=false"`
-	TracesExporterEndpoint          string            `env:"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"`
+	TracesExporterEndpoint          string            `env:"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,overwrite"`
 	TracesExporterEndpointInsecure  bool              `env:"OTEL_EXPORTER_OTLP_TRACES_INSECURE"`
 	TracesEnabled                   bool              `env:"OTEL_TRACES_ENABLED,default=true"`
-	ServiceName                     string            `env:"OTEL_SERVICE_NAME"`
-	ServiceVersion                  string            `env:"OTEL_SERVICE_VERSION,default=unknown"`
-	MetricsExporterEndpoint         string            `env:"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"`
+	ServiceName                     string            `env:"OTEL_SERVICE_NAME,overwrite"`
+	ServiceVersion                  string            `env:"OTEL_SERVICE_VERSION,overwrite,default=unknown"`
+	MetricsExporterEndpoint         string            `env:"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT,overwrite"`
 	MetricsExporterEndpointInsecure bool              `env:"OTEL_EXPORTER_OTLP_METRICS_INSECURE"`
 	MetricsEnabled                  bool              `env:"OTEL_METRICS_ENABLED,default=true"`
-	MetricsReportingPeriod          string            `env:"OTEL_EXPORTER_OTLP_METRICS_PERIOD,default=30s"`
-	LogLevel                        string            `env:"OTEL_LOG_LEVEL,default=info"`
-	Propagators                     []string          `env:"OTEL_PROPAGATORS,default=tracecontext,baggage"`
-	ResourceAttributesFromEnv       string            `env:"OTEL_RESOURCE_ATTRIBUTES"`
-	ExporterProtocol                Protocol          `env:"OTEL_EXPORTER_OTLP_PROTOCOL,default=grpc"`
-	TracesExporterProtocol          Protocol          `env:"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL"`
-	MetricsExporterProtocol         Protocol          `env:"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"`
+	MetricsReportingPeriod          string            `env:"OTEL_EXPORTER_OTLP_METRICS_PERIOD,overwrite,default=30s"`
+	LogLevel                        string            `env:"OTEL_LOG_LEVEL,overwrite,default=info"`
+	Propagators                     []string          `env:"OTEL_PROPAGATORS,overwrite,default=tracecontext,baggage"`
+	ExporterProtocol                Protocol          `env:"OTEL_EXPORTER_OTLP_PROTOCOL,overwrite,default=grpc"`
+	TracesExporterProtocol          Protocol          `env:"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL,overwrite"`
+	MetricsExporterProtocol         Protocol          `env:"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL,overwrite"`
 	Headers                         map[string]string `env:"OTEL_EXPORTER_OTLP_HEADERS,overwrite,separator=="`
 	TracesHeaders                   map[string]string `env:"OTEL_EXPORTER_OTLP_TRACES_HEADERS,overwrite,separator=="`
 	MetricsHeaders                  map[string]string `env:"OTEL_EXPORTER_OTLP_METRICS_HEADERS,overwrite,separator=="`
-	ResourceAttributes              map[string]string
+	ResourceAttributes              map[string]string `env:"OTEL_RESOURCE_ATTRIBUTES,overwrite,separator=="`
 	SpanProcessors                  []trace.SpanProcessor
 	Sampler                         trace.Sampler
 	ResourceOptions                 []resource.Option
@@ -340,12 +339,6 @@ func newConfig(opts ...Option) (*Config, error) {
 		Logger:             defLogger,
 		errorHandler:       &defaultHandler{logger: defLogger},
 		Sampler:            trace.AlwaysSample(),
-	}
-	envError := envconfig.Process(context.Background(), c)
-	if envError != nil {
-		c.Logger.Fatalf("environment error: %v", envError)
-		// if our logger implementation doesn't os.Exit, we want to return here
-		return nil, fmt.Errorf("environment error: %w", envError)
 	}
 	// if exporter endpoint is not set using an env var, use the configured default
 	if c.ExporterEndpoint == "" {
@@ -368,6 +361,14 @@ func newConfig(opts ...Option) (*Config, error) {
 		l.logLevel = c.LogLevel
 	}
 
+	// apply environment variables last to override any vendor or user options
+	envError := envconfig.Process(context.Background(), c)
+	if envError != nil {
+		c.Logger.Fatalf("environment error: %v", envError)
+		// if our logger implementation doesn't os.Exit, we want to return here
+		return nil, fmt.Errorf("environment error: %w", envError)
+	}
+
 	var err error
 	c.Resource, err = newResource(c)
 	return c, err
@@ -380,55 +381,35 @@ type OtelConfig struct {
 }
 
 func newResource(c *Config) (*resource.Resource, error) {
-	r := resource.Environment()
-
-	hostnameSet := false
-	for iter := r.Iter(); iter.Next(); {
-		if iter.Attribute().Key == semconv.HostNameKey && len(iter.Attribute().Value.Emit()) > 0 {
-			hostnameSet = true
-		}
+	options := []resource.Option{
+		resource.WithSchemaURL(semconv.SchemaURL),
 	}
-
-	attributes := []attribute.KeyValue{
+	if c.ResourceAttributes != nil {
+		attrs := make([]attribute.KeyValue, 0, len(c.ResourceAttributes))
+		for k, v := range c.ResourceAttributes {
+			if len(v) > 0 {
+				attrs = append(attrs, attribute.String(k, v))
+			}
+		}
+		options = append(options, resource.WithAttributes(attrs...))
+	}
+	options = append(options, c.ResourceOptions...)
+	if c.ServiceName != "" {
+		options = append(options, resource.WithAttributes(semconv.ServiceNameKey.String(c.ServiceName)))
+	}
+	if c.ServiceVersion != "" {
+		options = append(options, resource.WithAttributes(semconv.ServiceVersionKey.String(c.ServiceVersion)))
+	}
+	options = append(options, resource.WithHost())
+	options = append(options, resource.WithAttributes(
 		semconv.TelemetrySDKNameKey.String("otelconfig"),
 		semconv.TelemetrySDKLanguageGo,
 		semconv.TelemetrySDKVersionKey.String(version),
-	}
-
-	if len(c.ServiceName) > 0 {
-		attributes = append(attributes, semconv.ServiceNameKey.String(c.ServiceName))
-	}
-
-	if len(c.ServiceVersion) > 0 {
-		attributes = append(attributes, semconv.ServiceVersionKey.String(c.ServiceVersion))
-	}
-
-	for key, value := range c.ResourceAttributes {
-		if len(value) > 0 {
-			if key == string(semconv.HostNameKey) {
-				hostnameSet = true
-			}
-			attributes = append(attributes, attribute.String(key, value))
-		}
-	}
-
-	if !hostnameSet {
-		hostname, err := os.Hostname()
-		if err != nil {
-			c.Logger.Debugf("unable to set host.name. Set OTEL_RESOURCE_ATTRIBUTES=\"host.name=<your_host_name>\" env var or configure WithResourceAttributes in code: %v", err)
-		} else {
-			attributes = append(attributes, semconv.HostNameKey.String(hostname))
-		}
-	}
-
-	attributes = append(r.Attributes(), attributes...)
-
-	baseOptions := []resource.Option{
-		resource.WithSchemaURL(semconv.SchemaURL),
-		resource.WithAttributes(attributes...),
-	}
-
-	options := append(baseOptions, c.ResourceOptions...)
+	))
+	// OTEL_RESOURCE_ATTRIBUTES wins over anything from code
+	options = append(options, resource.WithFromEnv())
+	// OTEL_SERVICE_VERSION beats service.version from OTEL_RESOURCE_ATTRIBUTES, though
+	options = append(options, resource.WithDetectors(serviceVersionDetector{}))
 
 	// Note: There are new detectors we may wish to take advantage
 	// of, now available in the default SDK (e.g., WithProcess(),
@@ -437,7 +418,18 @@ func newResource(c *Config) (*resource.Resource, error) {
 		context.Background(),
 		options...,
 	)
+}
 
+type serviceVersionDetector struct{}
+
+var _ resource.Detector = serviceVersionDetector{}
+
+func (serviceVersionDetector) Detect(ctx context.Context) (*resource.Resource, error) {
+	serviceVersion := strings.TrimSpace(os.Getenv("OTEL_SERVICE_VERSION"))
+	if serviceVersion == "" {
+		return resource.Empty(), nil
+	}
+	return resource.NewSchemaless(semconv.ServiceVersionKey.String(serviceVersion)), nil
 }
 
 type setupFunc func(*Config) (func() error, error)
