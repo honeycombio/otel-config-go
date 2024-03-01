@@ -345,40 +345,48 @@ func TestEnvironmentVariables(t *testing.T) {
 		WithErrorHandler(handler),
 	)
 
+	expectedHostname, err := os.Hostname()
+	require.NoError(t, err)
+
 	expectedConfiguredResource := resource.NewWithAttributes(
 		semconv.SchemaURL,
-		attribute.String("host.name", host()),
+		attribute.String("host.name", expectedHostname),
+		attribute.String("an.env.attr", "hi"),
 		attribute.String("resource.clobber", "ENV_WON"),
-		attribute.String("service.name", "test-service-name"),
-		attribute.String("service.version", "test-service-version"),
+		attribute.String("service.name", environmentOtelSettings["OTEL_SERVICE_NAME"]),
+		attribute.String("service.version", environmentOtelSettings["OTEL_SERVICE_VERSION"]),
 		attribute.String("telemetry.sdk.name", "otelconfig"),
 		attribute.String("telemetry.sdk.language", "go"),
 		attribute.String("telemetry.sdk.version", version),
 	)
 
 	expectedConfig := &Config{
-		ExporterEndpoint:                "http://generic-url",
-		ExporterEndpointInsecure:        true,
-		TracesExporterEndpoint:          "http://traces-url",
-		TracesExporterEndpointInsecure:  true,
-		TracesEnabled:                   true,
-		ServiceName:                     "test-service-name",
-		ServiceVersion:                  "test-service-version",
-		MetricsExporterEndpoint:         "http://metrics-url",
-		MetricsExporterEndpointInsecure: true,
-		MetricsEnabled:                  false,
-		MetricsReportingPeriod:          "42s",
-		LogLevel:                        "debug",
-		Headers:                         map[string]string{"env-headers": "present", "header-clobber": "ENV_WON"},
-		TracesHeaders:                   map[string]string{"env-traces-headers": "present", "header-clobber": "ENV_WON"},
-		MetricsHeaders:                  map[string]string{"env-metrics-headers": "present", "header-clobber": "ENV_WON"},
-		ResourceAttributes:              map[string]string{"resource.clobber": "ENV_WON"},
-		Propagators:                     []string{"b3", "w3c"},
-		Resource:                        expectedConfiguredResource,
+		ServiceName:    environmentOtelSettings["OTEL_SERVICE_NAME"],
+		ServiceVersion: environmentOtelSettings["OTEL_SERVICE_VERSION"],
+		Resource:       expectedConfiguredResource,
+		ResourceAttributes: map[string]string{
+			"an.env.attr":      "hi",
+			"resource.clobber": "ENV_WON",
+		},
 		Logger:                          logger,
-		ExporterProtocol:                "grpc",
-		errorHandler:                    handler,
+		LogLevel:                        "debug",
+		Propagators:                     []string{"b3", "w3c"},
+		ExporterEndpoint:                environmentOtelSettings["OTEL_EXPORTER_OTLP_ENDPOINT"],
+		ExporterEndpointInsecure:        true,
+		ExporterProtocol:                Protocol(environmentOtelSettings["OTEL_EXPORTER_OTLP_PROTOCOL"]),
+		Headers:                         map[string]string{"env-headers": "present", "header-clobber": "ENV_WON"},
+		TracesEnabled:                   true,
+		TracesExporterEndpoint:          environmentOtelSettings["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"],
+		TracesExporterEndpointInsecure:  true,
+		TracesExporterProtocol:          Protocol(environmentOtelSettings["OTEL_EXPORTER_OTLP_TRACES_PROTOCOL"]),
+		TracesHeaders:                   map[string]string{"env-traces-headers": "present", "header-clobber": "ENV_WON"},
+		MetricsExporterEndpoint:         environmentOtelSettings["OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"],
+		MetricsExporterEndpointInsecure: true,
+		MetricsExporterProtocol:         Protocol(environmentOtelSettings["OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"]),
+		MetricsHeaders:                  map[string]string{"env-metrics-headers": "present", "header-clobber": "ENV_WON"},
+		MetricsReportingPeriod:          environmentOtelSettings["OTEL_EXPORTER_OTLP_METRICS_PERIOD"],
 		Sampler:                         trace.AlwaysSample(),
+		errorHandler:                    handler,
 	}
 	assert.NoError(t, err)
 	assert.Equal(t, expectedConfig, testConfig)
@@ -390,7 +398,9 @@ var _ resource.Detector = (*testDetector)(nil)
 
 // Detect implements resource.Detector.
 func (testDetector) Detect(ctx context.Context) (*resource.Resource, error) {
-	return resource.New(ctx)
+	return resource.New(ctx,
+		resource.WithAttributes(attribute.String("a.test.detector", "detected")),
+	)
 }
 
 func TestConfigurationOverrides(t *testing.T) {
@@ -400,26 +410,26 @@ func TestConfigurationOverrides(t *testing.T) {
 	logger := &testLogger{}
 	handler := &testErrorHandler{}
 	testConfig, err := newConfig(
-		WithServiceName("override-service-name"),
-		WithServiceVersion("override-service-version"),
-		WithExporterEndpoint("https://override-generic-url"),
+		WithServiceName("service-name-from-code"),
+		WithServiceVersion("service-version-from-code"),
+		WithExporterEndpoint("https://an.endpoint.in.code"),
 		WithExporterInsecure(false),
-		WithTracesExporterEndpoint("override-traces-url"),
+		WithTracesExporterEndpoint("traces-endpoint-from-code"),
 		WithTracesExporterInsecure(false),
-		WithMetricsExporterEndpoint("override-metrics-url"),
+		WithMetricsExporterEndpoint("metrics-endpoint-from-code"),
 		WithMetricsExporterInsecure(false),
-		WithHeaders(map[string]string{"config-headers": "present", "header-clobber": "CODE_WON"}),
-		WithTracesHeaders(map[string]string{"config-traces": "present", "header-clobber": "CODE_WON"}),
-		WithMetricsHeaders(map[string]string{"config-metrics": "present", "header-clobber": "CODE_WON"}),
+		WithHeaders(map[string]string{"code-headers": "present", "header-clobber": "CODE_WON"}),
+		WithTracesHeaders(map[string]string{"code-traces": "present", "header-clobber": "CODE_WON"}),
+		WithMetricsHeaders(map[string]string{"code-metrics": "present", "header-clobber": "CODE_WON"}),
 		WithLogLevel("info"),
 		WithLogger(logger),
 		WithErrorHandler(handler),
 		WithPropagators([]string{"b3"}),
-		WithExporterProtocol("http/protobuf"),
-		WithMetricsExporterProtocol("http/protobuf"),
-		WithTracesExporterProtocol("http/protobuf"),
+		WithExporterProtocol("http/json"),
+		WithMetricsExporterProtocol("http/json"),
+		WithTracesExporterProtocol("http/json"),
 		WithResourceOption(resource.WithAttributes(
-			attribute.String("host.name", "hardcoded-hostname"),
+			attribute.String("a.code.attr", "hey"),
 			attribute.String("resource.clobber", "CODE_WON"),
 		)),
 		WithResourceOption(resource.WithDetectors(&testDetector{})),
@@ -427,52 +437,66 @@ func TestConfigurationOverrides(t *testing.T) {
 
 	expectedConfiguredResource := resource.NewWithAttributes(
 		semconv.SchemaURL,
-		attribute.String("host.name", "hardcoded-hostname"),
-		attribute.String("resource.clobber", "CODE_WON"),
-		attribute.String("service.name", "test-service-name"),
-		attribute.String("service.version", "test-service-version"),
+		attribute.String("a.code.attr", "hey"),
+		attribute.String("a.test.detector", "detected"),
+		attribute.String("an.env.attr", "hi"),
+		attribute.String("resource.clobber", "ENV_WON"),
+		attribute.String("host.name", host()),
+		attribute.String("service.name", environmentOtelSettings["OTEL_SERVICE_NAME"]),
+		attribute.String("service.version", environmentOtelSettings["OTEL_SERVICE_VERSION"]),
 		attribute.String("telemetry.sdk.name", "otelconfig"),
 		attribute.String("telemetry.sdk.language", "go"),
 		attribute.String("telemetry.sdk.version", version),
 	)
 
 	expectedConfig := &Config{
-		ServiceName:                     "test-service-name",
-		ServiceVersion:                  "test-service-version",
-		ExporterEndpoint:                "http://generic-url",
-		ExporterEndpointInsecure:        true,
-		TracesExporterEndpoint:          "http://traces-url",
-		TracesExporterEndpointInsecure:  true,
-		TracesEnabled:                   true,
-		MetricsExporterEndpoint:         "http://metrics-url",
-		MetricsExporterEndpointInsecure: true,
-		MetricsReportingPeriod:          "42s",
-		LogLevel:                        "debug",
-		Headers:                         map[string]string{"env-headers": "present", "header-clobber": "ENV_WON"},
-		TracesHeaders:                   map[string]string{"env-traces-headers": "present", "header-clobber": "ENV_WON"},
-		MetricsHeaders:                  map[string]string{"env-metrics-headers": "present", "header-clobber": "ENV_WON"},
-		ResourceAttributes:              map[string]string{"resource.clobber": "ENV_WON"},
-		Propagators:                     []string{"b3", "w3c"},
-		Resource:                        expectedConfiguredResource,
-		Logger:                          logger,
-		ExporterProtocol:                "grpc",
-		TracesExporterProtocol:          "http/protobuf",
-		MetricsExporterProtocol:         "http/protobuf",
-		errorHandler:                    handler,
-		Sampler:                         trace.AlwaysSample(),
+		ServiceName:    environmentOtelSettings["OTEL_SERVICE_NAME"],
+		ServiceVersion: environmentOtelSettings["OTEL_SERVICE_VERSION"],
+		// what really matters is the configured resource, the result of all the merging of
+		// defaults and detectors and overrides
+		Resource: expectedConfiguredResource,
+		// set on the otelconfig Config object, mostly via the OTEL_RESOURCE_ATTRIBUTES environment variable
+		// we expect this struct property to match only the environment variable
+		ResourceAttributes: map[string]string{
+			"an.env.attr":      "hi",
+			"resource.clobber": "ENV_WON",
+		},
+		// we expect these to match what was given in code code config.
+		// Remember: the Resource property is what really matters as the result of merging all the
+		// things and is what is actually used by the tracer/meter/etc.
 		ResourceOptions: []resource.Option{
 			resource.WithAttributes(
-				attribute.String("host.name", "hardcoded-hostname"),
+				attribute.String("a.code.attr", "hey"),
 				attribute.String("resource.clobber", "CODE_WON"),
 			),
 			resource.WithDetectors(&testDetector{}),
 		},
+		Logger:                          logger,
+		LogLevel:                        "debug",
+		Propagators:                     []string{"b3", "w3c"},
+		ExporterEndpoint:                environmentOtelSettings["OTEL_EXPORTER_OTLP_ENDPOINT"],
+		ExporterEndpointInsecure:        true,
+		ExporterProtocol:                Protocol(environmentOtelSettings["OTEL_EXPORTER_OTLP_PROTOCOL"]),
+		Headers:                         map[string]string{"env-headers": "present", "header-clobber": "ENV_WON"},
+		TracesEnabled:                   true,
+		TracesExporterEndpoint:          environmentOtelSettings["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"],
+		TracesExporterEndpointInsecure:  true,
+		TracesExporterProtocol:          Protocol(environmentOtelSettings["OTEL_EXPORTER_OTLP_TRACES_PROTOCOL"]),
+		TracesHeaders:                   map[string]string{"env-traces-headers": "present", "header-clobber": "ENV_WON"},
+		MetricsExporterEndpoint:         environmentOtelSettings["OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"],
+		MetricsExporterEndpointInsecure: true,
+		MetricsExporterProtocol:         Protocol(environmentOtelSettings["OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"]),
+		MetricsHeaders:                  map[string]string{"env-metrics-headers": "present", "header-clobber": "ENV_WON"},
+		MetricsReportingPeriod:          environmentOtelSettings["OTEL_EXPORTER_OTLP_METRICS_PERIOD"],
+		Sampler:                         trace.AlwaysSample(),
+		errorHandler:                    handler,
 	}
 	// Generic and signal-specific headers should merge
 	expectedTraceHeaders := map[string]string{"env-headers": "present", "env-traces-headers": "present", "header-clobber": "ENV_WON"}
 	expectedMetricsHeaders := map[string]string{"env-headers": "present", "env-metrics-headers": "present", "header-clobber": "ENV_WON"}
 
 	assert.NoError(t, err)
+	assert.Equal(t, expectedConfiguredResource, testConfig.Resource)
 	assert.Equal(t, expectedConfig, testConfig)
 	assert.Equal(t, expectedTraceHeaders, testConfig.getTracesHeaders())
 	assert.Equal(t, expectedMetricsHeaders, testConfig.getMetricsHeaders())
@@ -583,60 +607,125 @@ func host() string {
 }
 
 func TestConfigureResourcesAttributes(t *testing.T) {
-	setenv("OTEL_RESOURCE_ATTRIBUTES", "label1=value1,label2=value2")
-	defer unsetAllOtelEnvironmentVariables()
+	testCases := []struct {
+		name               string
+		codeConfig         Config
+		envConfig          string
+		expectedAttributes []attribute.KeyValue
+	}{
+		{
+			name:       "default",
+			codeConfig: Config{},
+			envConfig:  "",
+			expectedAttributes: []attribute.KeyValue{
+				attribute.String("host.name", host()),
+				attribute.String("telemetry.sdk.language", "go"),
+				attribute.String("telemetry.sdk.name", "otelconfig"),
+				attribute.String("telemetry.sdk.version", version),
+			},
+		},
+		{
+			name: "from code: ResourceAttributes",
+			codeConfig: Config{
+				ResourceAttributes: map[string]string{"label1": "value1", "label2": "value2"},
+			},
+			envConfig: "",
+			expectedAttributes: []attribute.KeyValue{
+				attribute.String("host.name", host()),
+				attribute.String("label1", "value1"),
+				attribute.String("label2", "value2"),
+				attribute.String("telemetry.sdk.language", "go"),
+				attribute.String("telemetry.sdk.name", "otelconfig"),
+				attribute.String("telemetry.sdk.version", version),
+			},
+		},
+		{
+			name: "from code: ResourceOption",
+			codeConfig: Config{
+				ResourceOptions: []resource.Option{
+					resource.WithAttributes(attribute.String("label1", "value1"), attribute.String("label2", "value2")),
+				},
+			},
+			envConfig: "",
+			expectedAttributes: []attribute.KeyValue{
+				attribute.String("host.name", host()),
+				attribute.String("label1", "value1"),
+				attribute.String("label2", "value2"),
+				attribute.String("telemetry.sdk.language", "go"),
+				attribute.String("telemetry.sdk.name", "otelconfig"),
+				attribute.String("telemetry.sdk.version", version),
+			},
+		},
+		{
+			name: "from code: ResourceOption and ResourceAttributes",
+			codeConfig: Config{
+				ResourceAttributes: map[string]string{
+					"label1": "NOPE!",
+					"label2": "Shouldn't see me.",
+				},
+				ResourceOptions: []resource.Option{
+					resource.WithAttributes(
+						attribute.String("label1", "I won!"),
+						attribute.String("label2", "Horray!")),
+				},
+			},
+			envConfig: "",
+			expectedAttributes: []attribute.KeyValue{
+				attribute.String("host.name", host()),
+				attribute.String("label1", "I won!"),
+				attribute.String("label2", "Horray!"),
+				attribute.String("telemetry.sdk.language", "go"),
+				attribute.String("telemetry.sdk.name", "otelconfig"),
+				attribute.String("telemetry.sdk.version", version),
+			},
+		},
+		{
+			name:       "from env",
+			codeConfig: Config{},
+			envConfig:  "label1=value1,label2=value2",
+			expectedAttributes: []attribute.KeyValue{
+				attribute.String("host.name", host()),
+				attribute.String("label1", "value1"),
+				attribute.String("label2", "value2"),
+				attribute.String("telemetry.sdk.language", "go"),
+				attribute.String("telemetry.sdk.name", "otelconfig"),
+				attribute.String("telemetry.sdk.version", version),
+			},
+		},
+		{
+			name: "from env: env beats code",
+			codeConfig: Config{
+				ResourceAttributes: map[string]string{
+					"label1": "NOPE!",
+					"label2": "Shouldn't see me.",
+				},
+				ResourceOptions: []resource.Option{
+					resource.WithAttributes(
+						attribute.String("label1", "NOPE!"),
+						attribute.String("label2", "Shouldn't see me, either.")),
+				},
+			},
+			envConfig: "host.name=hosty-mchostface,label1=ENV_WON,label2=ENV_WON,telemetry.sdk.language=ogg",
+			expectedAttributes: []attribute.KeyValue{
+				attribute.String("host.name", "hosty-mchostface"),
+				attribute.String("label1", "ENV_WON"),
+				attribute.String("label2", "ENV_WON"),
+				attribute.String("telemetry.sdk.language", "ogg"),
+				attribute.String("telemetry.sdk.name", "otelconfig"),
+				attribute.String("telemetry.sdk.version", version),
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			setenv("OTEL_RESOURCE_ATTRIBUTES", tc.envConfig)
+			defer unsetAllOtelEnvironmentVariables()
 
-	config := Config{
-		ServiceName:    "test-service",
-		ServiceVersion: "test-version",
+			resource, err := newResource(&tc.codeConfig)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expectedAttributes, resource.Attributes())
+		})
 	}
-	resource, err := newResource(&config)
-	expected := []attribute.KeyValue{
-		attribute.String("host.name", host()),
-		attribute.String("label1", "value1"),
-		attribute.String("label2", "value2"),
-		attribute.String("service.name", "test-service"),
-		attribute.String("service.version", "test-version"),
-		attribute.String("telemetry.sdk.language", "go"),
-		attribute.String("telemetry.sdk.name", "otelconfig"),
-		attribute.String("telemetry.sdk.version", version),
-	}
-	assert.NoError(t, err)
-	assert.Equal(t, expected, resource.Attributes())
-
-	setenv("OTEL_RESOURCE_ATTRIBUTES", "telemetry.sdk.language=test-language")
-	config = Config{
-		ServiceName:    "test-service",
-		ServiceVersion: "test-version",
-	}
-	resource, err = newResource(&config)
-	expected = []attribute.KeyValue{
-		attribute.String("host.name", host()),
-		attribute.String("service.name", "test-service"),
-		attribute.String("service.version", "test-version"),
-		attribute.String("telemetry.sdk.language", "go"),
-		attribute.String("telemetry.sdk.name", "otelconfig"),
-		attribute.String("telemetry.sdk.version", version),
-	}
-	assert.NoError(t, err)
-	assert.Equal(t, expected, resource.Attributes())
-
-	setenv("OTEL_RESOURCE_ATTRIBUTES", "service.name=test-service-b,host.name=host123")
-	config = Config{
-		ServiceName:    "test-service-b",
-		ServiceVersion: "test-version",
-	}
-	resource, err = newResource(&config)
-	expected = []attribute.KeyValue{
-		attribute.String("host.name", "host123"),
-		attribute.String("service.name", "test-service-b"),
-		attribute.String("service.version", "test-version"),
-		attribute.String("telemetry.sdk.language", "go"),
-		attribute.String("telemetry.sdk.name", "otelconfig"),
-		attribute.String("telemetry.sdk.version", version),
-	}
-	assert.NoError(t, err)
-	assert.Equal(t, expected, resource.Attributes())
 }
 
 func TestServiceNameViaResourceAttributes(t *testing.T) {
@@ -1017,23 +1106,25 @@ func setenv(key string, value string) {
 
 // A map of the settings used to test configuring OpenTelemetry via environment variables.
 var environmentOtelSettings = map[string]string{
-	"OTEL_EXPORTER_OTLP_ENDPOINT":         "http://generic-url",
-	"OTEL_EXPORTER_OTLP_INSECURE":         "true",
-	"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT":  "http://traces-url",
-	"OTEL_EXPORTER_OTLP_TRACES_INSECURE":  "true",
 	"OTEL_SERVICE_NAME":                   "test-service-name",
 	"OTEL_SERVICE_VERSION":                "test-service-version",
-	"OTEL_EXPORTER_OTLP_HEADERS":          "env-headers=present,header-clobber=ENV_WON",
-	"OTEL_EXPORTER_OTLP_TRACES_HEADERS":   "env-traces-headers=present,header-clobber=ENV_WON",
-	"OTEL_EXPORTER_OTLP_METRICS_HEADERS":  "env-metrics-headers=present,header-clobber=ENV_WON",
-	"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT": "http://metrics-url",
-	"OTEL_EXPORTER_OTLP_METRICS_INSECURE": "true",
-	"OTEL_METRICS_ENABLED":                "false",
+	"OTEL_RESOURCE_ATTRIBUTES":            "an.env.attr=hi,resource.clobber=ENV_WON",
 	"OTEL_LOG_LEVEL":                      "debug",
 	"OTEL_PROPAGATORS":                    "b3,w3c",
-	"OTEL_RESOURCE_ATTRIBUTES":            "resource.clobber=ENV_WON",
-	"OTEL_EXPORTER_OTLP_PROTOCOL":         "grpc",
+	"OTEL_EXPORTER_OTLP_ENDPOINT":         "http://generic-url",
+	"OTEL_EXPORTER_OTLP_INSECURE":         "true",
+	"OTEL_EXPORTER_OTLP_HEADERS":          "env-headers=present,header-clobber=ENV_WON",
+	"OTEL_EXPORTER_OTLP_PROTOCOL":         "http/protobuf",
+	"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT":  "http://traces-url",
+	"OTEL_EXPORTER_OTLP_TRACES_INSECURE":  "true",
+	"OTEL_EXPORTER_OTLP_TRACES_HEADERS":   "env-traces-headers=present,header-clobber=ENV_WON",
+	"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL":  "http/protobuf",
+	"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT": "http://metrics-url",
+	"OTEL_EXPORTER_OTLP_METRICS_INSECURE": "true",
+	"OTEL_EXPORTER_OTLP_METRICS_HEADERS":  "env-metrics-headers=present,header-clobber=ENV_WON",
+	"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL": "http/protobuf",
 	"OTEL_EXPORTER_OTLP_METRICS_PERIOD":   "42s",
+	"OTEL_METRICS_ENABLED":                "false",
 }
 
 // setEnvironment sets OTEL_ environment variables for testing config via environment.

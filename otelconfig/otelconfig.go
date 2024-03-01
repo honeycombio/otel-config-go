@@ -381,55 +381,35 @@ type OtelConfig struct {
 }
 
 func newResource(c *Config) (*resource.Resource, error) {
-	r := resource.Environment()
-
-	hostnameSet := false
-	for iter := r.Iter(); iter.Next(); {
-		if iter.Attribute().Key == semconv.HostNameKey && len(iter.Attribute().Value.Emit()) > 0 {
-			hostnameSet = true
-		}
+	options := []resource.Option{
+		resource.WithSchemaURL(semconv.SchemaURL),
 	}
-
-	attributes := []attribute.KeyValue{
+	if c.ResourceAttributes != nil {
+		attrs := make([]attribute.KeyValue, 0, len(c.ResourceAttributes))
+		for k, v := range c.ResourceAttributes {
+			if len(v) > 0 {
+				attrs = append(attrs, attribute.String(k, v))
+			}
+		}
+		options = append(options, resource.WithAttributes(attrs...))
+	}
+	options = append(options, c.ResourceOptions...)
+	if c.ServiceName != "" {
+		options = append(options, resource.WithAttributes(semconv.ServiceNameKey.String(c.ServiceName)))
+	}
+	if c.ServiceVersion != "" {
+		options = append(options, resource.WithAttributes(semconv.ServiceVersionKey.String(c.ServiceVersion)))
+	}
+	options = append(options, resource.WithHost())
+	options = append(options, resource.WithAttributes(
 		semconv.TelemetrySDKNameKey.String("otelconfig"),
 		semconv.TelemetrySDKLanguageGo,
 		semconv.TelemetrySDKVersionKey.String(version),
-	}
-
-	if len(c.ServiceName) > 0 {
-		attributes = append(attributes, semconv.ServiceNameKey.String(c.ServiceName))
-	}
-
-	if len(c.ServiceVersion) > 0 {
-		attributes = append(attributes, semconv.ServiceVersionKey.String(c.ServiceVersion))
-	}
-
-	for key, value := range c.ResourceAttributes {
-		if len(value) > 0 {
-			if key == string(semconv.HostNameKey) {
-				hostnameSet = true
-			}
-			attributes = append(attributes, attribute.String(key, value))
-		}
-	}
-
-	if !hostnameSet {
-		hostname, err := os.Hostname()
-		if err != nil {
-			c.Logger.Debugf("unable to set host.name. Set OTEL_RESOURCE_ATTRIBUTES=\"host.name=<your_host_name>\" env var or configure WithResourceAttributes in code: %v", err)
-		} else {
-			attributes = append(attributes, semconv.HostNameKey.String(hostname))
-		}
-	}
-
-	attributes = append(r.Attributes(), attributes...)
-
-	baseOptions := []resource.Option{
-		resource.WithSchemaURL(semconv.SchemaURL),
-		resource.WithAttributes(attributes...),
-	}
-
-	options := append(baseOptions, c.ResourceOptions...)
+	))
+	// OTEL_RESOURCE_ATTRIBUTES wins over anything from code
+	options = append(options, resource.WithFromEnv())
+	// OTEL_SERVICE_VERSION beats service.version from OTEL_RESOURCE_ATTRIBUTES, though
+	options = append(options, resource.WithDetectors(serviceVersionDetector{}))
 
 	// Note: There are new detectors we may wish to take advantage
 	// of, now available in the default SDK (e.g., WithProcess(),
@@ -438,7 +418,18 @@ func newResource(c *Config) (*resource.Resource, error) {
 		context.Background(),
 		options...,
 	)
+}
 
+type serviceVersionDetector struct{}
+
+var _ resource.Detector = serviceVersionDetector{}
+
+func (serviceVersionDetector) Detect(ctx context.Context) (*resource.Resource, error) {
+	serviceVersion := strings.TrimSpace(os.Getenv("OTEL_SERVICE_VERSION"))
+	if serviceVersion == "" {
+		return resource.Empty(), nil
+	}
+	return resource.NewSchemaless(semconv.ServiceVersionKey.String(serviceVersion)), nil
 }
 
 type setupFunc func(*Config) (func() error, error)
