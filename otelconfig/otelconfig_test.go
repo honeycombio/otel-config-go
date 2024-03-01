@@ -746,14 +746,14 @@ func TestServiceNameViaResourceAttributes(t *testing.T) {
 	logger.requireNotContains(t, notExpected)
 }
 
-func TestEmptyHostnameDefaultsToOsHostname(t *testing.T) {
+func TestEmptyResourceEnvVarsStillWin(t *testing.T) {
 	stopper := dummyGRPCListener()
 	defer stopper()
 
 	setenv("OTEL_RESOURCE_ATTRIBUTES", "host.name=")
 	defer unsetAllOtelEnvironmentVariables()
 
-	shutdown, _ := ConfigureOpenTelemetry(
+	shutdown, err := ConfigureOpenTelemetry(
 		WithServiceName("test-service"),
 		WithTracesExporterEndpoint("localhost:443"),
 		WithResourceAttributes(map[string]string{
@@ -762,14 +762,15 @@ func TestEmptyHostnameDefaultsToOsHostname(t *testing.T) {
 		}),
 		WithShutdown(func(c *Config) error {
 			attrs := attribute.NewSet(c.Resource.Attributes()...)
-			v, ok := attrs.Value("host.name")
-			assert.Equal(t, host(), v.AsString())
-			assert.True(t, ok)
+			v, exists := attrs.Value("host.name")
+			require.True(t, exists)
+			assert.Equal(t, "", v.AsString(), "empty OTEL_RESOURCE_ATTRIBUTES still win")
 			return nil
 		}),
 		withTestExporters(),
 	)
 	defer shutdown()
+	assert.NoError(t, err)
 }
 
 func TestConfigWithResourceAttributes(t *testing.T) {
