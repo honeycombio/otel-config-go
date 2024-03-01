@@ -1,5 +1,26 @@
 # otel-config-go changelog
 
+## v1.14.0 (2024-02-06)
+
+### Enhancements
+
+- feat: Populate headers from specified environment variables (#99) | @smoyer64
+- feat: Add additional tests for handling OTel env vars for signal generic and specific exporter headers (#106) | @MikeGoldsmith
+
+### Fixes
+
+- fix: Prefer environment variables over code configuration (#106) | @MikeGoldsmith
+
+### Maintenance
+
+- maint: upload test results to CircleCI & add Go 1.22 to test matrix (#108) | @robbkidd
+- maint: update codeowners to pipeline-team (#97) | @JamieDanielson
+- maint: update codeowners to pipeline (#96) | @JamieDanielson
+- maint(deps): bump go.opentelemetry.io/proto/otlp from 1.0.0 to 1.1.0 (#105) | @Dependabot
+- maint(deps): bump go.opentelemetry.io/otel from 1.21.0 to 1.22.0 (#102) | @Dependabot
+- maint(deps): bump google.golang.org/grpc from 1.60.1 to 1.61.0 (#103) | @Dependabot
+- maint(deps): bump google.golang.org/grpc from 1.59.0 to 1.60.1 (#100) | @Dependabot
+
 ## v1.13.1 (2023-12-04)
 
 ### Fixes
