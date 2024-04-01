@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/sethvargo/go-envconfig v0.9.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/contrib/detectors/aws/lambda v0.46.1
 	go.opentelemetry.io/contrib/instrumentation/host v0.46.1
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.46.1
