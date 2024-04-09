@@ -3,7 +3,7 @@ version: 2.1
 matrix_goversions: &matrix_goversions
   matrix:
     parameters:
-      goversion: ["20", "21", "22"]
+      goversion: ["21", "22"]
 
 default_goversion: &default_goversion "22"
 
