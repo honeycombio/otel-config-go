@@ -1,9 +1,10 @@
 module github.com/honeycombio/otel-config-go
 
 go 1.21
+toolchain go1.22.1
 
 require (
-	github.com/sethvargo/go-envconfig v0.9.0
+	github.com/sethvargo/go-envconfig v1.0.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/contrib/detectors/aws/lambda v0.50.0
 	go.opentelemetry.io/contrib/instrumentation/host v0.50.0
