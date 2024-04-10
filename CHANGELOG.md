@@ -1,5 +1,13 @@
 # otel-config-go changelog
 
+## v1.15.0 (2024-04-10)
+
+### Maintenance
+
+- maint: update dependencies to 1.25.0 (#117) | @codeboten
+- maint: Update ubuntu image in workflows to latest (#113) | @MikeGoldsmith
+- maint: add labels to release.yml for auto-generated grouping (#112) | @JamieDanielson
+
 ## v1.14.0 (2024-02-06)
 
 ### Enhancements
