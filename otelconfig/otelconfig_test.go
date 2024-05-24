@@ -183,6 +183,36 @@ func TestMetricEndpointDisabled(t *testing.T) {
 	)
 }
 
+func testSignalDisabled(t *testing.T, expected string, opts ...Option) {
+	logger := &testLogger{}
+	shutdown, err := ConfigureOpenTelemetry(
+		append(opts,
+			WithLogger(logger),
+			WithServiceName("test-service"),
+		)...,
+	)
+	require.NoError(t, err)
+	defer shutdown()
+
+	logger.requireContains(t, expected)
+}
+
+func TestMetricsDisabled(t *testing.T) {
+	testSignalDisabled(
+		t,
+		expectedMetricsDisabledMessage,
+		WithMetricsEnabled(false),
+	)
+}
+
+func TestTracesDisabled(t *testing.T) {
+	testSignalDisabled(
+		t,
+		expectedTracingDisabledMessage,
+		WithTracesEnabled(false),
+	)
+}
+
 func TestValidConfig(t *testing.T) {
 	logger := &testLogger{}
 
