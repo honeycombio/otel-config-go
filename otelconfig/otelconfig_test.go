@@ -31,8 +31,10 @@ import (
 //revive:disable:import-shadowing this is a test file
 
 const (
-	expectedTracingDisabledMessage = "tracing is disabled by configuration: no endpoint set"
-	expectedMetricsDisabledMessage = "metrics are disabled by configuration: no endpoint set"
+	expectedTracingDisabledMessage       = "tracing is disabled by configuration: no endpoint set"
+	expectedMetricsDisabledMessage       = "metrics are disabled by configuration: no endpoint set"
+	expectedTracingDisabledConfigMessage = "tracing is disabled by configuration: enabled set to false"
+	expectedMetricsDisabledConfigMessage = "metrics are disabled by configuration: enabled set to false"
 )
 
 type testLogger struct {
@@ -203,7 +205,7 @@ func testSignalDisabled(t *testing.T, expected string, opts ...Option) {
 func TestMetricsDisabled(t *testing.T) {
 	testSignalDisabled(
 		t,
-		expectedMetricsDisabledMessage,
+		expectedMetricsDisabledConfigMessage,
 		WithMetricsEnabled(false),
 	)
 }
@@ -211,7 +213,7 @@ func TestMetricsDisabled(t *testing.T) {
 func TestTracesDisabled(t *testing.T) {
 	testSignalDisabled(
 		t,
-		expectedTracingDisabledMessage,
+		expectedTracingDisabledConfigMessage,
 		WithTracesEnabled(false),
 	)
 }

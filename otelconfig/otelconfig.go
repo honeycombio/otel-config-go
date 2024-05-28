@@ -575,7 +575,11 @@ func setupTracing(c *Config) (func() error, error) {
 	} else {
 		enabled = *c.TracesEnabled
 	}
-	if !enabled || endpoint == "" {
+	if !enabled {
+		c.Logger.Debugf("tracing is disabled by configuration: enabled set to false")
+		return nil, nil
+	}
+	if endpoint == "" {
 		c.Logger.Debugf("tracing is disabled by configuration: no endpoint set")
 		return nil, nil
 	}
@@ -600,7 +604,11 @@ func setupMetrics(c *Config) (func() error, error) {
 	} else {
 		enabled = *c.MetricsEnabled
 	}
-	if !enabled || endpoint == "" {
+	if !enabled {
+		c.Logger.Debugf("metrics are disabled by configuration: enabled set to false")
+		return nil, nil
+	}
+	if endpoint == "" {
 		c.Logger.Debugf("metrics are disabled by configuration: no endpoint set")
 		return nil, nil
 	}
