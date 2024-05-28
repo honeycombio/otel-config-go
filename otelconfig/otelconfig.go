@@ -188,14 +188,14 @@ func WithMetricsReportingPeriod(p time.Duration) Option {
 // WithMetricsEnabled configures whether metrics should be enabled.
 func WithMetricsEnabled(enabled bool) Option {
 	return func(c *Config) {
-		c.MetricsEnabled = enabled
+		c.MetricsEnabled = &enabled
 	}
 }
 
 // WithTracesEnabled configures whether traces should be enabled.
 func WithTracesEnabled(enabled bool) Option {
 	return func(c *Config) {
-		c.TracesEnabled = enabled
+		c.TracesEnabled = &enabled
 	}
 }
 
@@ -305,12 +305,12 @@ type Config struct {
 	ExporterEndpointInsecure        bool              `env:"OTEL_EXPORTER_OTLP_INSECURE,default=false"`
 	TracesExporterEndpoint          string            `env:"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,overwrite"`
 	TracesExporterEndpointInsecure  bool              `env:"OTEL_EXPORTER_OTLP_TRACES_INSECURE"`
-	TracesEnabled                   bool              `env:"OTEL_TRACES_ENABLED,default=true"`
+	TracesEnabled                   *bool             `env:"OTEL_TRACES_ENABLED,default=true"`
 	ServiceName                     string            `env:"OTEL_SERVICE_NAME,overwrite"`
 	ServiceVersion                  string            `env:"OTEL_SERVICE_VERSION,overwrite,default=unknown"`
 	MetricsExporterEndpoint         string            `env:"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT,overwrite"`
 	MetricsExporterEndpointInsecure bool              `env:"OTEL_EXPORTER_OTLP_METRICS_INSECURE"`
-	MetricsEnabled                  bool              `env:"OTEL_METRICS_ENABLED,default=true"`
+	MetricsEnabled                  *bool             `env:"OTEL_METRICS_ENABLED,default=true"`
 	MetricsReportingPeriod          string            `env:"OTEL_EXPORTER_OTLP_METRICS_PERIOD,overwrite,default=30s"`
 	LogLevel                        string            `env:"OTEL_LOG_LEVEL,overwrite,default=info"`
 	Propagators                     []string          `env:"OTEL_PROPAGATORS,overwrite,default=tracecontext,baggage"`
@@ -569,7 +569,13 @@ func (c *Config) getMetricsHeaders() map[string]string {
 
 func setupTracing(c *Config) (func() error, error) {
 	endpoint, insecure := c.getTracesEndpoint()
-	if !c.TracesEnabled || endpoint == "" {
+	var enabled bool
+	if c.TracesEnabled == nil {
+		enabled = true
+	} else {
+		enabled = *c.TracesEnabled
+	}
+	if !enabled || endpoint == "" {
 		c.Logger.Debugf("tracing is disabled by configuration: no endpoint set")
 		return nil, nil
 	}
@@ -588,7 +594,13 @@ func setupTracing(c *Config) (func() error, error) {
 
 func setupMetrics(c *Config) (func() error, error) {
 	endpoint, insecure := c.getMetricsEndpoint()
-	if !c.MetricsEnabled || endpoint == "" {
+	var enabled bool
+	if c.MetricsEnabled == nil {
+		enabled = true
+	} else {
+		enabled = *c.MetricsEnabled
+	}
+	if !enabled || endpoint == "" {
 		c.Logger.Debugf("metrics are disabled by configuration: no endpoint set")
 		return nil, nil
 	}

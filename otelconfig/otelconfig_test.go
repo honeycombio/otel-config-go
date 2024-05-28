@@ -72,6 +72,9 @@ func (logger *testLogger) requireNotContains(t *testing.T, expected string) {
 	}
 }
 
+var trueVal = true
+var falseVal = false
+
 // Create some dummy server implementations so that we can
 // spin up tests that don't need to wait for a timeout trying to send data.
 type dummyTraceServer struct {
@@ -324,12 +327,12 @@ func TestDefaultConfig(t *testing.T) {
 		ExporterEndpointInsecure:        false,
 		TracesExporterEndpoint:          "",
 		TracesExporterEndpointInsecure:  false,
-		TracesEnabled:                   true,
+		TracesEnabled:                   &trueVal,
 		ServiceName:                     "",
 		ServiceVersion:                  "unknown",
 		MetricsExporterEndpoint:         "",
 		MetricsExporterEndpointInsecure: false,
-		MetricsEnabled:                  true,
+		MetricsEnabled:                  &trueVal,
 		MetricsReportingPeriod:          "30s",
 		LogLevel:                        "info",
 		Headers:                         map[string]string{},
@@ -405,11 +408,12 @@ func TestEnvironmentVariables(t *testing.T) {
 		ExporterEndpointInsecure:        true,
 		ExporterProtocol:                Protocol(environmentOtelSettings["OTEL_EXPORTER_OTLP_PROTOCOL"]),
 		Headers:                         map[string]string{"env-headers": "present", "header-clobber": "ENV_WON"},
-		TracesEnabled:                   true,
+		TracesEnabled:                   &trueVal,
 		TracesExporterEndpoint:          environmentOtelSettings["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"],
 		TracesExporterEndpointInsecure:  true,
 		TracesExporterProtocol:          Protocol(environmentOtelSettings["OTEL_EXPORTER_OTLP_TRACES_PROTOCOL"]),
 		TracesHeaders:                   map[string]string{"env-traces-headers": "present", "header-clobber": "ENV_WON"},
+		MetricsEnabled:                  &falseVal,
 		MetricsExporterEndpoint:         environmentOtelSettings["OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"],
 		MetricsExporterEndpointInsecure: true,
 		MetricsExporterProtocol:         Protocol(environmentOtelSettings["OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"]),
@@ -508,7 +512,8 @@ func TestConfigurationOverrides(t *testing.T) {
 		ExporterEndpointInsecure:        true,
 		ExporterProtocol:                Protocol(environmentOtelSettings["OTEL_EXPORTER_OTLP_PROTOCOL"]),
 		Headers:                         map[string]string{"env-headers": "present", "header-clobber": "ENV_WON"},
-		TracesEnabled:                   true,
+		TracesEnabled:                   &trueVal,
+		MetricsEnabled:                  &falseVal,
 		TracesExporterEndpoint:          environmentOtelSettings["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"],
 		TracesExporterEndpointInsecure:  true,
 		TracesExporterProtocol:          Protocol(environmentOtelSettings["OTEL_EXPORTER_OTLP_TRACES_PROTOCOL"]),
