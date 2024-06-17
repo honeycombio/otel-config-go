@@ -1,5 +1,15 @@
 # otel-config-go changelog
 
+
+## v1.16.0 (2024-06-17)
+
+### Maintenance
+
+- maint(deps): update dependencies (#130) | @VinozzZ
+
+### Fixes
+- fix: allow disabling of config options that default to true (#123) | @JamieDanielson
+
 ## v1.15.0 (2024-04-10)
 
 ### Maintenance
