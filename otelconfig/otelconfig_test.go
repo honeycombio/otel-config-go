@@ -884,7 +884,18 @@ func TestConfigWithUnmergableResources(t *testing.T) {
 		WithResourceOption(resource.WithDetectors(detect)),
 		withTestExporters(),
 	)
-	assert.ErrorContains(t, err, "conflicting Schema URL")
+	assert.NoError(t, err, "no conflicting Schema URL should be returned")
+
+	r, err := newResource(&Config{
+		ResourceOptions: []resource.Option{
+			resource.WithSchemaURL("1234"),
+		},
+	})
+	assert.Error(t, err)
+	assert.Equal(t, "", r.SchemaURL())
+	cfg, err := newConfig(WithResourceOption(resource.WithSchemaURL("1234")))
+	assert.NoError(t, err)
+	assert.Equal(t, "", cfg.Resource.SchemaURL())
 }
 
 func TestThatEndpointsFallBackCorrectly(t *testing.T) {
