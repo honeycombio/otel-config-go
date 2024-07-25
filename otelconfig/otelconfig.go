@@ -3,6 +3,7 @@ package otelconfig
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -371,6 +372,15 @@ func newConfig(opts ...Option) (*Config, error) {
 
 	var err error
 	c.Resource, err = newResource(c)
+
+	if err != nil {
+		if errors.Is(err, resource.ErrSchemaURLConflict) {
+			c.Logger.Debugf("schema conflict %v", err)
+			// ignore schema conflicts
+			err = nil
+		}
+	}
+
 	return c, err
 }
 
