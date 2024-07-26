@@ -1,5 +1,17 @@
 # otel-config-go changelog
 
+## v1.17.0 (2024-07-25)
+
+### Fixes
+
+- fix: ignore schema URL conflicts (#137) | @codeboten
+
+### Maintenance
+
+- maint: update dependencies to 1.28.0 (#117) | @codeboten
+- maint: update team in dependabot config (#138) | @codeboten
+- docs: update vulnerability reporting process (#132) | @robbkidd
+
 ## v1.16.0 (2024-06-17)
 
 ### Maintenance
