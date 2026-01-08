@@ -357,17 +357,17 @@ func newConfig(opts ...Option) (*Config, error) {
 		opt(c)
 	}
 
-	// If using defaultLogger, update it's LogLevel to configured level
-	if l, ok := c.Logger.(*defaultLogger); ok {
-		l.logLevel = c.LogLevel
-	}
-
 	// apply environment variables last to override any vendor or user options
 	envError := envconfig.Process(context.Background(), c)
 	if envError != nil {
 		c.Logger.Fatalf("environment error: %v", envError)
 		// if our logger implementation doesn't os.Exit, we want to return here
 		return nil, fmt.Errorf("environment error: %w", envError)
+	}
+
+	// If using defaultLogger, update it's LogLevel to configured level
+	if l, ok := c.Logger.(*defaultLogger); ok {
+		l.logLevel = c.LogLevel
 	}
 
 	var err error
