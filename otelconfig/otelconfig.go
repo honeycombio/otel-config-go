@@ -75,6 +75,13 @@ func WithTracesExporterEndpoint(url string) Option {
 	}
 }
 
+// WithLogsExporterEndpoint configures the endpoint for sending logs via OTLP.
+func WithLogsExporterEndpoint(url string) Option {
+	return func(c *Config) {
+		c.LogsExporterEndpoint = url
+	}
+}
+
 // WithServiceName configures a "service.name" resource label.
 func WithServiceName(name string) Option {
 	return func(c *Config) {
@@ -122,6 +129,15 @@ func WithMetricsHeaders(headers map[string]string) Option {
 	}
 }
 
+// WithLogsHeaders configures OTLP logs exporter headers.
+func WithLogsHeaders(headers map[string]string) Option {
+	return func(c *Config) {
+		for k, v := range headers {
+			c.LogsHeaders[k] = v
+		}
+	}
+}
+
 // WithLogLevel configures the logging level for OpenTelemetry.
 func WithLogLevel(loglevel string) Option {
 	return func(c *Config) {
@@ -142,6 +158,14 @@ func WithTracesExporterInsecure(insecure bool) Option {
 func WithMetricsExporterInsecure(insecure bool) Option {
 	return func(c *Config) {
 		c.MetricsExporterEndpointInsecure = insecure
+	}
+}
+
+// WithLogsExporterInsecure permits connecting to the
+// logs endpoint without a certificate.
+func WithLogsExporterInsecure(insecure bool) Option {
+	return func(c *Config) {
+		c.LogsExporterEndpointInsecure = insecure
 	}
 }
 
@@ -200,6 +224,13 @@ func WithTracesEnabled(enabled bool) Option {
 	}
 }
 
+// WithLogsEnabled configures whether logs should be enabled.
+func WithLogsEnabled(enabled bool) Option {
+	return func(c *Config) {
+		c.LogsEnabled = &enabled
+	}
+}
+
 // WithSpanProcessor adds one or more SpanProcessors.
 func WithSpanProcessor(sp ...trace.SpanProcessor) Option {
 	return func(c *Config) {
@@ -244,6 +275,13 @@ func WithTracesExporterProtocol(protocol Protocol) Option {
 func WithMetricsExporterProtocol(protocol Protocol) Option {
 	return func(c *Config) {
 		c.MetricsExporterProtocol = protocol
+	}
+}
+
+// WithLogsExporterProtocol defines the protocol for Logs.
+func WithLogsExporterProtocol(protocol Protocol) Option {
+	return func(c *Config) {
+		c.LogsExporterProtocol = protocol
 	}
 }
 
@@ -302,33 +340,42 @@ func (l *defaultHandler) Handle(err error) {
 // vary depending on the protocol chosen. If not overridden by explicit configuration, it will
 // be overridden with an appropriate default upon initialization.
 type Config struct {
-	ExporterEndpoint                string            `env:"OTEL_EXPORTER_OTLP_ENDPOINT,overwrite"`
-	ExporterEndpointInsecure        bool              `env:"OTEL_EXPORTER_OTLP_INSECURE,default=false"`
-	TracesExporterEndpoint          string            `env:"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,overwrite"`
-	TracesExporterEndpointInsecure  bool              `env:"OTEL_EXPORTER_OTLP_TRACES_INSECURE"`
-	TracesEnabled                   *bool             `env:"OTEL_TRACES_ENABLED,default=true"`
-	ServiceName                     string            `env:"OTEL_SERVICE_NAME,overwrite"`
-	ServiceVersion                  string            `env:"OTEL_SERVICE_VERSION,overwrite,default=unknown"`
-	MetricsExporterEndpoint         string            `env:"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT,overwrite"`
-	MetricsExporterEndpointInsecure bool              `env:"OTEL_EXPORTER_OTLP_METRICS_INSECURE"`
+	ExporterEndpoint         string            `env:"OTEL_EXPORTER_OTLP_ENDPOINT,overwrite"`
+	ExporterEndpointInsecure bool              `env:"OTEL_EXPORTER_OTLP_INSECURE,default=false"`
+	ExporterProtocol         Protocol          `env:"OTEL_EXPORTER_OTLP_PROTOCOL,overwrite,default=grpc"`
+	ServiceName              string            `env:"OTEL_SERVICE_NAME,overwrite"`
+	ServiceVersion           string            `env:"OTEL_SERVICE_VERSION,overwrite,default=unknown"`
+	LogLevel                 string            `env:"OTEL_LOG_LEVEL,overwrite,default=info"`
+	Propagators              []string          `env:"OTEL_PROPAGATORS,overwrite,default=tracecontext,baggage"`
+	Headers                  map[string]string `env:"OTEL_EXPORTER_OTLP_HEADERS,overwrite,separator=="`
+	ResourceAttributes       map[string]string `env:"OTEL_RESOURCE_ATTRIBUTES,overwrite,separator=="`
+
+	TracesEnabled                  *bool             `env:"OTEL_TRACES_ENABLED,default=true"`
+	TracesExporterEndpoint         string            `env:"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,overwrite"`
+	TracesExporterEndpointInsecure bool              `env:"OTEL_EXPORTER_OTLP_TRACES_INSECURE"`
+	TracesExporterProtocol         Protocol          `env:"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL,overwrite"`
+	TracesHeaders                  map[string]string `env:"OTEL_EXPORTER_OTLP_TRACES_HEADERS,overwrite,separator=="`
+
 	MetricsEnabled                  *bool             `env:"OTEL_METRICS_ENABLED,default=true"`
 	MetricsReportingPeriod          string            `env:"OTEL_EXPORTER_OTLP_METRICS_PERIOD,overwrite,default=30s"`
-	LogLevel                        string            `env:"OTEL_LOG_LEVEL,overwrite,default=info"`
-	Propagators                     []string          `env:"OTEL_PROPAGATORS,overwrite,default=tracecontext,baggage"`
-	ExporterProtocol                Protocol          `env:"OTEL_EXPORTER_OTLP_PROTOCOL,overwrite,default=grpc"`
-	TracesExporterProtocol          Protocol          `env:"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL,overwrite"`
+	MetricsExporterEndpoint         string            `env:"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT,overwrite"`
+	MetricsExporterEndpointInsecure bool              `env:"OTEL_EXPORTER_OTLP_METRICS_INSECURE"`
 	MetricsExporterProtocol         Protocol          `env:"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL,overwrite"`
-	Headers                         map[string]string `env:"OTEL_EXPORTER_OTLP_HEADERS,overwrite,separator=="`
-	TracesHeaders                   map[string]string `env:"OTEL_EXPORTER_OTLP_TRACES_HEADERS,overwrite,separator=="`
 	MetricsHeaders                  map[string]string `env:"OTEL_EXPORTER_OTLP_METRICS_HEADERS,overwrite,separator=="`
-	ResourceAttributes              map[string]string `env:"OTEL_RESOURCE_ATTRIBUTES,overwrite,separator=="`
-	SpanProcessors                  []trace.SpanProcessor
-	Sampler                         trace.Sampler
-	ResourceOptions                 []resource.Option
-	Resource                        *resource.Resource
-	Logger                          Logger                  `json:"-"`
-	ShutdownFunctions               []func(c *Config) error `json:"-"`
-	errorHandler                    otel.ErrorHandler
+
+	LogsEnabled                  *bool             `env:"OTEL_LOGS_ENABLED,default=true"`
+	LogsExporterEndpoint         string            `env:"OTEL_EXPORTER_OTLP_LOGS_ENDPOINT,overwrite"`
+	LogsExporterEndpointInsecure bool              `env:"OTEL_EXPORTER_OTLP_LOGS_INSECURE"`
+	LogsExporterProtocol         Protocol          `env:"OTEL_EXPORTER_OTLP_LOGS_PROTOCOL,overwrite"`
+	LogsHeaders                  map[string]string `env:"OTEL_EXPORTER_OTLP_LOGS_HEADERS,overwrite,separator=="`
+
+	SpanProcessors    []trace.SpanProcessor
+	Sampler           trace.Sampler
+	ResourceOptions   []resource.Option
+	Resource          *resource.Resource
+	Logger            Logger                  `json:"-"`
+	ShutdownFunctions []func(c *Config) error `json:"-"`
+	errorHandler      otel.ErrorHandler
 }
 
 func newConfig(opts ...Option) (*Config, error) {
@@ -336,6 +383,7 @@ func newConfig(opts ...Option) (*Config, error) {
 		Headers:            map[string]string{},
 		TracesHeaders:      map[string]string{},
 		MetricsHeaders:     map[string]string{},
+		LogsHeaders:        map[string]string{},
 		ResourceAttributes: map[string]string{},
 		Logger:             defLogger,
 		errorHandler:       &defaultHandler{logger: defLogger},
@@ -553,6 +601,35 @@ func (c *Config) getMetricsEndpoint() (string, bool) {
 	return ensurePort(c.MetricsExporterEndpoint, port), c.MetricsExporterEndpointInsecure
 }
 
+func (c *Config) getLogsEndpoint() (string, bool) {
+	// use logs specific endpoint, falling back to generic version if not set
+	if c.LogsExporterEndpoint == "" {
+		// if generic endpoint is empty, traces is disabled
+		if c.ExporterEndpoint == "" {
+			return "", false
+		}
+		c.LogsExporterEndpoint = c.ExporterEndpoint
+		c.LogsExporterEndpointInsecure = c.ExporterEndpointInsecure
+	}
+
+	// use logs specific protocol, falling back to generic version if not set
+	if c.LogsExporterProtocol == "" {
+		c.LogsExporterProtocol = c.ExporterProtocol
+	}
+
+	// helper function - if using grpc and prepending with http, drop the http scheme
+	if c.LogsExporterProtocol == ProtocolGRPC {
+		c.LogsExporterEndpoint = trimHttpScheme(c.LogsExporterEndpoint, ProtocolGRPC)
+	}
+
+	// use logs specific port, failling back to generic version if not set
+	port := GRPCDefaultPort
+	if c.LogsExporterProtocol == ProtocolGRPC {
+		port = GRPCDefaultPort
+	}
+	return ensurePort(c.LogsExporterEndpoint, port), c.LogsExporterEndpointInsecure
+}
+
 func (c *Config) getTracesHeaders() map[string]string {
 	// combine generic and traces headers
 	headers := map[string]string{}
@@ -572,6 +649,18 @@ func (c *Config) getMetricsHeaders() map[string]string {
 		headers[key] = value
 	}
 	for key, value := range c.MetricsHeaders {
+		headers[key] = value
+	}
+	return headers
+}
+
+func (c *Config) getLogsHeaders() map[string]string {
+	// combine generic and logs headers
+	headers := map[string]string{}
+	for key, value := range c.Headers {
+		headers[key] = value
+	}
+	for key, value := range c.LogsHeaders {
 		headers[key] = value
 	}
 	return headers
@@ -633,6 +722,32 @@ func setupMetrics(c *Config) (func() error, error) {
 	})
 }
 
+func setupLogs(c *Config) (func() error, error) {
+	endpoint, insecure := c.getLogsEndpoint()
+	var enabled bool
+	if c.LogsEnabled == nil {
+		enabled = true
+	} else {
+		enabled = *c.LogsEnabled
+	}
+	if !enabled {
+		c.Logger.Debugf("logs are disabled by configuration: enabled set to false")
+		return nil, nil
+	}
+	if endpoint == "" {
+		c.Logger.Debugf("logs are disabled by configuration: no endpoint set")
+		return nil, nil
+	}
+
+	return pipelines.NewLogsPipeline(pipelines.PipelineConfig{
+		Protocol: pipelines.Protocol(c.LogsExporterProtocol),
+		Endpoint: trimHttpScheme(endpoint, c.LogsExporterProtocol),
+		Insecure: insecure,
+		Headers:  c.getLogsHeaders(),
+		Resource: c.Resource,
+	})
+}
+
 // ConfigureOpenTelemetry is a function that be called with zero or more options.
 // Options can be the basic ones above, or provided by individual vendors.
 func ConfigureOpenTelemetry(opts ...Option) (func(), error) {
@@ -663,7 +778,7 @@ func ConfigureOpenTelemetry(opts ...Option) (func(), error) {
 		config: c,
 	}
 
-	for _, setup := range []setupFunc{setupTracing, setupMetrics} {
+	for _, setup := range []setupFunc{setupTracing, setupMetrics, setupLogs} {
 		shutdown, err := setup(c)
 		if err != nil {
 			return otelConfig.Shutdown, fmt.Errorf("setup error: %w", err)
