@@ -8,7 +8,7 @@ Latest release built with:
 - OpenTelemetry Go Contrib [v1.28.0/v0.53.0](https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v1.28.0)
 - OpenTelemetry Semantic Conventions [v1.26.0](https://github.com/open-telemetry/opentelemetry-go/tree/main/semconv/v1.26.0)
 
-Minimum Go Version: `1.21`
+Minimum Go Version: `1.23`
 
 See the OpenTelemetry SDK's [compatability matrix](https://github.com/open-telemetry/opentelemetry-go#compatibility) for more information.
 
@@ -61,17 +61,26 @@ As of v1.8.0, this package has been renamed from `otel-launcher-go` to `otel-con
 | WithHeaders                 | OTEL_EXPORTER_OTLP_HEADERS          | n        | {}                   |
 | WithTracesHeaders           | OTEL_EXPORTER_OTLP_TRACES_HEADERS   | n        | {}                   |
 | WithMetricsHeaders          | OTEL_EXPORTER_OTLP_METRICS_HEADERS  | n        | {}                   |
+| WithLogsHeaders             | OTEL_EXPORTER_OTLP_LOGS_HEADERS     | n        | {}                   |
 | WithExporterProtocol        | OTEL_EXPORTER_OTLP_PROTOCOL         | n        | grpc                 |
+| WithTracesExporterProtocol  | OTEL_EXPORTER_OTLP_TRACES_PROTOCOL  | n        | -                    |
+| WithMetricsExporterProtocol | OTEL_EXPORTER_OTLP_METRICS_PROTOCOL | n        | -                    |
+| WithLogsExporterProtocol    | OTEL_EXPORTER_OTLP_LOGS_PROTOCOL    | n        | -                    |
+| WithExporterEndpoint        | OTEL_EXPORTER_OTLP_ENDPOINT         | n        | localhost:4317       |
+| WithExporterInsecure        | OTEL_EXPORTER_OTLP_INSECURE         | n        | false                |
 | WithTracesExporterEndpoint  | OTEL_EXPORTER_OTLP_TRACES_ENDPOINT  | n        | localhost:4317       |
 | WithTracesExporterInsecure  | OTEL_EXPORTER_OTLP_TRACES_INSECURE  | n        | false                |
 | WithMetricsExporterEndpoint | OTEL_EXPORTER_OTLP_METRICS_ENDPOINT | n        | localhost:4317       |
 | WithMetricsExporterInsecure | OTEL_EXPORTER_OTLP_METRICS_INSECURE | n        | false                |
+| WithLogsExporterEndpoint    | OTEL_EXPORTER_OTLP_LOGS_ENDPOINT    | n        | localhost:4317       |
+| WithLogsExporterInsecure    | OTEL_EXPORTER_OTLP_LOGS_INSECURE    | n        | false                |
 | WithLogLevel                | OTEL_LOG_LEVEL                      | n        | info                 |
 | WithPropagators             | OTEL_PROPAGATORS                    | n        | tracecontext,baggage |
 | WithResourceAttributes      | OTEL_RESOURCE_ATTRIBUTES            | n        | -                    |
 | WithMetricsReportingPeriod  | OTEL_EXPORTER_OTLP_METRICS_PERIOD   | n        | 30s                  |
 | WithMetricsEnabled          | OTEL_METRICS_ENABLED                | n        | true                 |
 | WithTracesEnabled           | OTEL_TRACES_ENABLED                 | n        | true                 |
+| WithLogsEnabled             | OTEL_LOGS_ENABLED                   | n        | true                 |
 
 ------
 
