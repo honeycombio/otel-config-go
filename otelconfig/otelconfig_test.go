@@ -1026,6 +1026,46 @@ func TestHttpProtoDefaultsToCorrectHostAndPort(t *testing.T) {
 	logger.requireContains(t, "received data from path: /v1/metrics")
 }
 
+func TestEnsurePort(t *testing.T) {
+	tests := []struct {
+		host     string
+		expected string
+	}{
+		{"collector.example.com", "collector.example.com:4317"},
+		{"collector.example.com:", "collector.example.com:4317"},
+		{"collector.example.com:9999", "collector.example.com:9999"},
+		{"127.0.0.1", "127.0.0.1:4317"},
+		{"[::1]", "[::1]:4317"},
+		{"[::1]:", "[::1]:4317"},
+		{"[::1]:9999", "[::1]:9999"},
+		{"[2001:db8::1]", "[2001:db8::1]:4317"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.host, func(t *testing.T) {
+			assert.Equal(t, tt.expected, ensurePort(tt.host, GRPCDefaultPort))
+		})
+	}
+}
+
+func TestIPv6EndpointsGetDefaultPort(t *testing.T) {
+	c := &Config{
+		ExporterEndpoint:        "http://[::1]",
+		ExporterProtocol:        ProtocolGRPC,
+		MetricsExporterEndpoint: "[2001:db8::1]",
+	}
+	endpoint, _ := c.getTracesEndpoint()
+	assert.Equal(t, "[::1]:4317", endpoint)
+	endpoint, _ = c.getMetricsEndpoint()
+	assert.Equal(t, "[2001:db8::1]:4317", endpoint)
+
+	c = &Config{
+		ExporterEndpoint: "[::1]",
+		ExporterProtocol: ProtocolHTTPProto,
+	}
+	endpoint, _ = c.getTracesEndpoint()
+	assert.Equal(t, "[::1]:4318", endpoint)
+}
+
 func TestCanConfigureCustomSampler(t *testing.T) {
 	sampler := &testSampler{}
 	config, err := newConfig(

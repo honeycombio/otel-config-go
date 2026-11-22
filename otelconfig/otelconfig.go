@@ -446,7 +446,18 @@ type setupFunc func(*Config) (func() error, error)
 
 // ensures that a port is set on the given host string, or adds the default port.
 func ensurePort(host string, defaultPort string) string {
-	ix := strings.Index(host, ":")
+	// The colons inside a bracketed IPv6 literal are not a port separator,
+	// so only look for one after the closing bracket.
+	start := 0
+	if strings.HasPrefix(host, "[") {
+		if end := strings.Index(host, "]"); end >= 0 {
+			start = end + 1
+		}
+	}
+	ix := strings.Index(host[start:], ":")
+	if ix >= 0 {
+		ix += start
+	}
 	switch {
 	case ix < 0:
 		return host + ":" + defaultPort
