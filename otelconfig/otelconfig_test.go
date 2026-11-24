@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -1024,6 +1025,126 @@ func TestHttpProtoDefaultsToCorrectHostAndPort(t *testing.T) {
 	assert.True(t, len(logger.output) == 2)
 	logger.requireContains(t, "received data from path: /v1/traces")
 	logger.requireContains(t, "received data from path: /v1/metrics")
+}
+
+func TestThatHttpEndpointPathsAreSplitFromTheHost(t *testing.T) {
+	testCases := []struct {
+		name            string
+		configOpts      []Option
+		tracesEndpoint  string
+		tracesPath      string
+		metricsEndpoint string
+		metricsPath     string
+	}{
+		{
+			name: "no path leaves the sdk default alone",
+			configOpts: []Option{
+				WithExporterEndpoint("https://generic-url:4318"),
+				WithExporterProtocol("http/protobuf"),
+			},
+			tracesEndpoint:  "https://generic-url:4318",
+			metricsEndpoint: "https://generic-url:4318",
+		},
+		{
+			name: "generic endpoint path gets the signal path appended",
+			configOpts: []Option{
+				WithExporterEndpoint("https://generic-url:4318/otlp"),
+				WithExporterProtocol("http/protobuf"),
+			},
+			tracesEndpoint:  "https://generic-url:4318",
+			tracesPath:      "/otlp/v1/traces",
+			metricsEndpoint: "https://generic-url:4318",
+			metricsPath:     "/otlp/v1/metrics",
+		},
+		{
+			name: "trailing slash on the generic path is not doubled",
+			configOpts: []Option{
+				WithExporterEndpoint("https://generic-url:4318/otlp/"),
+				WithExporterProtocol("http/protobuf"),
+			},
+			tracesEndpoint:  "https://generic-url:4318",
+			tracesPath:      "/otlp/v1/traces",
+			metricsEndpoint: "https://generic-url:4318",
+			metricsPath:     "/otlp/v1/metrics",
+		},
+		{
+			name: "path without a scheme still gets the default port",
+			configOpts: []Option{
+				WithExporterEndpoint("generic-url/otlp"),
+				WithExporterProtocol("http/protobuf"),
+			},
+			tracesEndpoint:  "generic-url:4318",
+			tracesPath:      "/otlp/v1/traces",
+			metricsEndpoint: "generic-url:4318",
+			metricsPath:     "/otlp/v1/metrics",
+		},
+		{
+			name: "signal specific endpoint path is used as given",
+			configOpts: []Option{
+				WithExporterEndpoint("https://generic-url:4318/otlp"),
+				WithTracesExporterEndpoint("https://traces-url:4318/custom/traces"),
+				WithMetricsExporterEndpoint("https://metrics-url:4318/custom/metrics"),
+				WithExporterProtocol("http/protobuf"),
+			},
+			tracesEndpoint:  "https://traces-url:4318",
+			tracesPath:      "/custom/traces",
+			metricsEndpoint: "https://metrics-url:4318",
+			metricsPath:     "/custom/metrics",
+		},
+		{
+			name: "grpc endpoints are left alone",
+			configOpts: []Option{
+				WithExporterEndpoint("https://generic-url:4317"),
+				WithExporterProtocol("grpc"),
+			},
+			tracesEndpoint:  "generic-url:4317",
+			metricsEndpoint: "generic-url:4317",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, err := newConfig(tc.configOpts...)
+			require.NoError(t, err)
+
+			tracesEndpoint, _ := cfg.getTracesEndpoint()
+			assert.Equal(t, tc.tracesEndpoint, tracesEndpoint)
+			assert.Equal(t, tc.tracesPath, cfg.tracesURLPath)
+
+			metricsEndpoint, _ := cfg.getMetricsEndpoint()
+			assert.Equal(t, tc.metricsEndpoint, metricsEndpoint)
+			assert.Equal(t, tc.metricsPath, cfg.metricsURLPath)
+		})
+	}
+}
+
+func TestHttpProtoSendsToTheConfiguredPath(t *testing.T) {
+	var mu sync.Mutex
+	var paths []string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		paths = append(paths, r.URL.Path)
+	}))
+	defer ts.Close()
+
+	shutdown, err := ConfigureOpenTelemetry(
+		WithLogger(&testLogger{}),
+		WithExporterEndpoint(ts.URL+"/otlp"),
+		WithMetricsExporterEndpoint(ts.URL+"/custom/metrics"),
+		WithExporterInsecure(true),
+		WithMetricsExporterInsecure(true),
+		WithExporterProtocol("http/protobuf"),
+	)
+	require.NoError(t, err)
+
+	_, span := otel.GetTracerProvider().Tracer("otelconfig-tests").Start(context.Background(), "test-span")
+	span.End()
+	shutdown()
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.ElementsMatch(t, []string{"/otlp/v1/traces", "/custom/metrics"}, paths)
 }
 
 func TestCanConfigureCustomSampler(t *testing.T) {

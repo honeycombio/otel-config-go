@@ -329,6 +329,8 @@ type Config struct {
 	Logger                          Logger                  `json:"-"`
 	ShutdownFunctions               []func(c *Config) error `json:"-"`
 	errorHandler                    otel.ErrorHandler
+	tracesURLPath                   string
+	metricsURLPath                  string
 }
 
 func newConfig(opts ...Option) (*Config, error) {
@@ -495,8 +497,39 @@ func trimHttpScheme(url string, protocol Protocol) string {
 	}
 }
 
+// splitEndpointPath separates the URL path from an HTTP endpoint, so that
+// the host (and scheme, when given) can be handed to the exporter on its own.
+// The returned path keeps its leading slash and is empty when there is none.
+func splitEndpointPath(endpoint string) (string, string) {
+	start := 0
+	if ix := strings.Index(endpoint, "://"); ix >= 0 {
+		start = ix + len("://")
+	}
+	ix := strings.Index(endpoint[start:], "/")
+	if ix < 0 {
+		return endpoint, ""
+	}
+	ix += start
+	return endpoint[:ix], endpoint[ix:]
+}
+
+// httpSignalPath works out the path the exporter should post to. A path on
+// the generic endpoint gets the signal path appended, as the OTLP exporter
+// spec describes. A path on a signal specific endpoint is used as it was given.
+func httpSignalPath(path string, generic bool, signalPath string) string {
+	path = strings.TrimSuffix(path, "/")
+	if path == "" {
+		return ""
+	}
+	if generic {
+		return path + signalPath
+	}
+	return path
+}
+
 func (c *Config) getTracesEndpoint() (string, bool) {
 	// use traces specific endpoint, falling back to generic version if not set
+	generic := c.TracesExporterEndpoint == ""
 	if c.TracesExporterEndpoint == "" {
 		// if generic endpoint is empty, traces is disabled
 		if c.ExporterEndpoint == "" {
@@ -521,11 +554,18 @@ func (c *Config) getTracesEndpoint() (string, bool) {
 	if c.TracesExporterProtocol != ProtocolGRPC {
 		port = HTTPDefaultPort
 	}
-	return ensurePort(c.TracesExporterEndpoint, port), c.TracesExporterEndpointInsecure
+	endpoint := c.TracesExporterEndpoint
+	if c.TracesExporterProtocol != ProtocolGRPC {
+		var path string
+		endpoint, path = splitEndpointPath(endpoint)
+		c.tracesURLPath = httpSignalPath(path, generic, "/v1/traces")
+	}
+	return ensurePort(endpoint, port), c.TracesExporterEndpointInsecure
 }
 
 func (c *Config) getMetricsEndpoint() (string, bool) {
 	// use metrics specific endpoint, falling back to generic version if not set
+	generic := c.MetricsExporterEndpoint == ""
 	if c.MetricsExporterEndpoint == "" {
 		// if generic endpoint is empty, traces is disabled
 		if c.ExporterEndpoint == "" {
@@ -550,7 +590,13 @@ func (c *Config) getMetricsEndpoint() (string, bool) {
 	if c.MetricsExporterProtocol == ProtocolGRPC {
 		port = GRPCDefaultPort
 	}
-	return ensurePort(c.MetricsExporterEndpoint, port), c.MetricsExporterEndpointInsecure
+	endpoint := c.MetricsExporterEndpoint
+	if c.MetricsExporterProtocol != ProtocolGRPC {
+		var path string
+		endpoint, path = splitEndpointPath(endpoint)
+		c.metricsURLPath = httpSignalPath(path, generic, "/v1/metrics")
+	}
+	return ensurePort(endpoint, port), c.MetricsExporterEndpointInsecure
 }
 
 func (c *Config) getTracesHeaders() map[string]string {
@@ -597,6 +643,7 @@ func setupTracing(c *Config) (func() error, error) {
 	return pipelines.NewTracePipeline(pipelines.PipelineConfig{
 		Protocol:       pipelines.Protocol(c.TracesExporterProtocol),
 		Endpoint:       trimHttpScheme(endpoint, c.TracesExporterProtocol),
+		URLPath:        c.tracesURLPath,
 		Insecure:       insecure,
 		Headers:        c.getTracesHeaders(),
 		Resource:       c.Resource,
@@ -626,6 +673,7 @@ func setupMetrics(c *Config) (func() error, error) {
 	return pipelines.NewMetricsPipeline(pipelines.PipelineConfig{
 		Protocol:        pipelines.Protocol(c.MetricsExporterProtocol),
 		Endpoint:        trimHttpScheme(endpoint, c.MetricsExporterProtocol),
+		URLPath:         c.metricsURLPath,
 		Insecure:        insecure,
 		Headers:         c.getMetricsHeaders(),
 		Resource:        c.Resource,

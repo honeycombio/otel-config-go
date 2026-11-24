@@ -19,6 +19,7 @@ const (
 type PipelineConfig struct {
 	Protocol        Protocol
 	Endpoint        string
+	URLPath         string
 	Insecure        bool
 	Headers         map[string]string
 	Resource        *resource.Resource
