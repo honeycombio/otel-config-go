@@ -21,7 +21,7 @@ import (
 // NewMetricsPipeline takes a PipelineConfig and builds a metrics pipeline.
 // It returns a shutdown function that should be called when terminating the pipeline.
 func NewMetricsPipeline(c PipelineConfig) (func() error, error) {
-	metricExporter, err := newMetricsExporter(c.Protocol, c.Endpoint, c.Insecure, c.Headers)
+	metricExporter, err := newMetricsExporter(c.Protocol, c.Endpoint, c.URLPath, c.Insecure, c.Headers)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metric exporter: %v", err)
 	}
@@ -57,12 +57,12 @@ func NewMetricsPipeline(c PipelineConfig) (func() error, error) {
 }
 
 //revive:disable:flag-parameter bools are fine for an internal function
-func newMetricsExporter(protocol Protocol, endpoint string, insecure bool, headers map[string]string) (metric.Exporter, error) {
+func newMetricsExporter(protocol Protocol, endpoint string, urlPath string, insecure bool, headers map[string]string) (metric.Exporter, error) {
 	switch protocol {
 	case ProtocolGRPC:
 		return newGRPCMetricsExporter(endpoint, insecure, headers)
 	case ProtocolHTTPProtobuf:
-		return newHTTPMetricsExporter(endpoint, insecure, headers)
+		return newHTTPMetricsExporter(endpoint, urlPath, insecure, headers)
 	case ProtocolHTTPJSON:
 		return nil, errors.New("http/json is currently unsupported")
 	default:
@@ -84,17 +84,20 @@ func newGRPCMetricsExporter(endpoint string, insecure bool, headers map[string]s
 	)
 }
 
-func newHTTPMetricsExporter(endpoint string, insecure bool, headers map[string]string) (metric.Exporter, error) {
+func newHTTPMetricsExporter(endpoint string, urlPath string, insecure bool, headers map[string]string) (metric.Exporter, error) {
 	tlsconfig := &tls.Config{}
 	secureOption := otlpmetrichttp.WithTLSClientConfig(tlsconfig)
 	if insecure {
 		secureOption = otlpmetrichttp.WithInsecure()
 	}
-	return otlpmetrichttp.New(
-		context.Background(),
+	opts := []otlpmetrichttp.Option{
 		secureOption,
 		otlpmetrichttp.WithEndpoint(endpoint),
 		otlpmetrichttp.WithHeaders(headers),
 		otlpmetrichttp.WithCompression(otlpmetrichttp.GzipCompression),
-	)
+	}
+	if urlPath != "" {
+		opts = append(opts, otlpmetrichttp.WithURLPath(urlPath))
+	}
+	return otlpmetrichttp.New(context.Background(), opts...)
 }

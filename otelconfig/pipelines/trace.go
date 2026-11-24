@@ -31,7 +31,7 @@ func NewTracePipeline(c PipelineConfig) (func() error, error) {
 	}
 
 	// make sure the exporter is added last
-	spanExporter, err := newTraceExporter(c.Protocol, c.Endpoint, c.Insecure, c.Headers)
+	spanExporter, err := newTraceExporter(c.Protocol, c.Endpoint, c.URLPath, c.Insecure, c.Headers)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create span exporter: %v", err)
 	}
@@ -53,12 +53,12 @@ func NewTracePipeline(c PipelineConfig) (func() error, error) {
 }
 
 //revive:disable:flag-parameter bools are fine for an internal function
-func newTraceExporter(protocol Protocol, endpoint string, insecure bool, headers map[string]string) (*otlptrace.Exporter, error) {
+func newTraceExporter(protocol Protocol, endpoint string, urlPath string, insecure bool, headers map[string]string) (*otlptrace.Exporter, error) {
 	switch protocol {
 	case ProtocolGRPC:
 		return newGRPCTraceExporter(endpoint, insecure, headers)
 	case ProtocolHTTPProtobuf:
-		return newHTTPTraceExporter(endpoint, insecure, headers)
+		return newHTTPTraceExporter(endpoint, urlPath, insecure, headers)
 	case ProtocolHTTPJSON:
 		return nil, errors.New("http/json is currently unsupported")
 	default:
@@ -82,21 +82,22 @@ func newGRPCTraceExporter(endpoint string, insecure bool, headers map[string]str
 	)
 }
 
-func newHTTPTraceExporter(endpoint string, insecure bool, headers map[string]string) (*otlptrace.Exporter, error) {
+func newHTTPTraceExporter(endpoint string, urlPath string, insecure bool, headers map[string]string) (*otlptrace.Exporter, error) {
 	tlsconfig := &tls.Config{}
 	secureOption := otlptracehttp.WithTLSClientConfig(tlsconfig)
 	if insecure {
 		secureOption = otlptracehttp.WithInsecure()
 	}
-	return otlptrace.New(
-		context.Background(),
-		otlptracehttp.NewClient(
-			secureOption,
-			otlptracehttp.WithEndpoint(endpoint),
-			otlptracehttp.WithHeaders(headers),
-			otlptracehttp.WithCompression(otlptracehttp.GzipCompression),
-		),
-	)
+	opts := []otlptracehttp.Option{
+		secureOption,
+		otlptracehttp.WithEndpoint(endpoint),
+		otlptracehttp.WithHeaders(headers),
+		otlptracehttp.WithCompression(otlptracehttp.GzipCompression),
+	}
+	if urlPath != "" {
+		opts = append(opts, otlptracehttp.WithURLPath(urlPath))
+	}
+	return otlptrace.New(context.Background(), otlptracehttp.NewClient(opts...))
 }
 
 // configurePropagators configures B3 propagation by default.
